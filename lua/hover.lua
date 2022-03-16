@@ -5,8 +5,19 @@ local M = {}
 local providers = {}
 M.providers = providers
 
+local function is_enabled(provider)
+  return provider.enabled == nil or provider.enabled()
+end
+
 function M.register(provider)
+  if not provider.execute or type(provider.execute) ~= 'function' then
+    print(string.format('error: hover provider %s does not provide an execute function',
+      provider.name or 'NA'))
+    return
+  end
+
   provider.execute = async.wrap(provider.execute, 1)
+
   if provider.priority then
     for i, p in ipairs(providers) do
       if not p.priority or p.priority < provider.priority then
@@ -18,18 +29,35 @@ function M.register(provider)
   providers[#providers+1] = provider
 end
 
+M.hover_select = function()
+  local choices = {}
+  for _, p in ipairs(providers) do
+    if is_enabled(p) then
+      choices[#choices+1] = p
+    end
+  end
+
+  vim.ui.select(
+    choices, {
+      prompt = 'Select hover:',
+      format_item = function(provider)
+        return provider.name
+      end,
+    },
+    async.void(function(provider)
+      if provider then
+        provider.execute()
+      end
+    end)
+  )
+end
+
 M.hover = async.void(function()
-  for i, provider in ipairs(providers) do
-    if provider.enabled == nil or provider.enabled() then
-      if not provider.execute or type(provider.execute) ~= 'function' then
-        print(string.format('warning: hover provider %s does not provide an execute function',
-          provider.name or i))
-      else
-        print('Running '..provider.name)
-        if provider.execute() ~= false then
-          print('DONE')
-          return
-        end
+  for _, provider in ipairs(providers) do
+    if is_enabled(provider) then
+      print('hover.nvim: Running '..provider.name)
+      if provider.execute() ~= false then
+        return
       end
     end
   end

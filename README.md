@@ -12,9 +12,11 @@ via packer:
     -- Require providers
     require('hover.providers.lsp')
     -- require('hover.providers.gh')
+    -- require('hover.providers.dictionary')
 
-    -- Setup keymap
-    vim.keymap.set('n', 'K', require('hover').hover, { desc='hover.nvim' })
+    -- Setup keymaps
+    vim.keymap.set('n',  'K', require('hover').hover       , { desc='hover.nvim'         })
+    vim.keymap.set('n', 'gK', require('hover').hover_select, { desc='hover.nvim (select)' })
   end}
 ```
 
@@ -23,12 +25,25 @@ via packer:
 ### LSP
 `require('hover.providers.lsp')`
 
+Builtin LSP
+
+Priority: 1000
+
 ### Github
 `require('hover.providers.gh')`
 
 Opens issue/PR's for symbols like `#123`.
 
 Requires the `gh` command.
+
+Priority: 200
+
+### Dictionary
+`require('hover.providers.dictionary')`
+
+Definitions for valid words
+
+Priority: 100
 
 ## Creating a hover provider
 
@@ -63,6 +78,9 @@ require('hover').register {
   enabled = function()
     return #vim.lsp.get_active_clients() > 0
   end,
-  execute = vim.lsp.buf.hover
+  execute = function(done)
+    vim.lsp.buf.hover()
+    done(true)
+  end
 }
 ```

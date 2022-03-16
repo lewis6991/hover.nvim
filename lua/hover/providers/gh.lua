@@ -5,8 +5,7 @@ local job = require('hover.async.job').job
 local util = require('vim.lsp.util')
 
 local function enabled()
-  do return true end
-  -- return fn.expand('<cWORD>'):match('#%d+') ~= nil
+  return fn.expand('<cWORD>'):match('#%d+') ~= nil
 end
 
 local function process(result)
