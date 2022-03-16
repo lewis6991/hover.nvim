@@ -11,6 +11,7 @@ via packer:
   {'lewis6991/hover.nvim', config = function()
     -- Require providers
     require('hover.providers.lsp')
+    -- require('hover.providers.gh')
 
     -- Setup keymap
     vim.keymap.set('n', 'K', require('hover').hover, { desc='hover.nvim' })
