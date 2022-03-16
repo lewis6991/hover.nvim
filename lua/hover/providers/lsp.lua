@@ -4,7 +4,7 @@ require('hover').register {
   enabled = function()
     local clients = vim.tbl_values(vim.lsp.buf_get_clients())
     for _, client in pairs(clients) do
-      if client.hover then
+      if client.resolved_capabilities.hover then
         return true
       end
     end
