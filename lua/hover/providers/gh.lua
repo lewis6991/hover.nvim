@@ -38,12 +38,30 @@ local execute = async.void(function(done)
   local cwd = fn.fnamemodify(api.nvim_buf_get_name(bufnr), ':p:h')
   local id = fn.expand('<cword>')
 
-  local output = job {
-    'gh', 'issue', 'view', '--json',
-    'author,title,number,body,state,createdAt,updatedAt,url',
-    id,
-    cwd = cwd
-  }
+  local word = fn.expand('<cWORD>')
+
+  local output
+
+  local fields = 'author,title,number,body,state,createdAt,updatedAt,url'
+
+  local repo, num = word:match('(%w+/%w+)#(%d+)')
+  if repo then
+    output = job {
+      'gh', 'issue', 'view', '--json', fields, num, '-R', repo,
+      cwd = cwd
+    }
+  else
+    num = word:match('#(%d+)')
+    if num then
+      output = job {
+        'gh', 'issue', 'view', '--json', fields, id,
+        cwd = cwd
+      }
+    else
+      done(false)
+      return
+    end
+  end
 
   async.scheduler()
   local results = process(output)
