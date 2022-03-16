@@ -27,6 +27,8 @@ via packer:
 
 Opens issue/PR's for symbols like `#123`.
 
+Requires the `gh` command.
+
 ## Creating a hover provider
 
 Call `require('hover').register(<provider>)` with a table containing the following fields:
