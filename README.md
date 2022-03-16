@@ -36,7 +36,8 @@ Call `require('hover').register(<provider>)` with a table containing the followi
 
 - `name`: string, name of the hover provider
 - `enabled`: function, whether the hover is active for the current context
-- `execute`: function, executes the hover
+- `execute`: function, executes the hover. Has a `done` callback as it's first argument.
+  Call `done(false)` if the hover failed to execute. This will allow other lower priority hovers to run.
 - `priority`: number (optional), priority of the provider
 
 
@@ -49,9 +50,10 @@ require('hover').register {
    enabled = function()
      return true
    end,
-   execute = function()
+   execute = function(done)
      local util = require('vim.lsp.util')
      util.open_floating_preview({'TEST'}, "markdown")
+     done(true)
    end
 }
 

@@ -20,7 +20,6 @@ M.job = async.wrap(function(obj, callback)
 
   if handle then
     stdout:read_start(function(_, data)
-      print(data)
       stdout_data[#stdout_data+1] = data
     end)
   else

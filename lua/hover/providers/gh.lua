@@ -5,7 +5,8 @@ local job = require('hover.async.job').job
 local util = require('vim.lsp.util')
 
 local function enabled()
-  return fn.expand('<cWORD>'):match('#%d+') ~= nil
+  do return true end
+  -- return fn.expand('<cWORD>'):match('#%d+') ~= nil
 end
 
 local function process(result)
@@ -33,7 +34,7 @@ local function process(result)
   return lines
 end
 
-local execute = async.void(function()
+local execute = async.void(function(done)
   local bufnr = api.nvim_get_current_buf()
   local cwd = fn.fnamemodify(api.nvim_buf_get_name(bufnr), ':p:h')
   local id = fn.expand('<cword>')
@@ -50,11 +51,12 @@ local execute = async.void(function()
   if results then
     util.open_floating_preview(results, "markdown")
   end
+  done(results and true or false)
 end)
 
 require('hover').register {
   name = 'Github',
-  priority = 100,
+  priority = 200,
   enabled = enabled,
   execute = execute,
 }

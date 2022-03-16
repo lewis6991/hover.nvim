@@ -66,7 +66,6 @@ end
 function M.void(func)
   return function(...)
     if async_thread.inside() then
-
       return func(...)
     end
     execute(func, ...)
