@@ -2,7 +2,13 @@ require('hover').register {
   name = 'LSP',
   priority = 1000,
   enabled = function()
-    return #vim.lsp.get_active_clients() > 0
+    local clients = vim.tbl_values(vim.lsp.buf_get_clients())
+    for _, client in pairs(clients) do
+      if client.hover then
+        return true
+      end
+    end
+    return false
   end,
   execute = function(done)
     local util = require('vim.lsp.util')

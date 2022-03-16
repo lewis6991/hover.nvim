@@ -12,6 +12,7 @@ via packer:
     -- Require providers
     require('hover.providers.lsp')
     -- require('hover.providers.gh')
+    -- require('hover.providers.man')
     -- require('hover.providers.dictionary')
 
     -- Setup keymaps
@@ -37,6 +38,13 @@ Opens issue/PR's for symbols like `#123`.
 Requires the `gh` command.
 
 Priority: 200
+
+### Man
+`require('hover.providers.man')`
+
+`man` entries
+
+Priority: 150
 
 ### Dictionary
 `require('hover.providers.dictionary')`

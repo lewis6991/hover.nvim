@@ -1,4 +1,4 @@
-local api, fn = vim.api, vim.fn
+local fn = vim.fn
 
 local async = require('hover.async')
 local job = require('hover.async.job').job
