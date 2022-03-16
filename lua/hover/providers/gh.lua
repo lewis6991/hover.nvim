@@ -26,7 +26,7 @@ local function process(result)
     ''
   }
 
-  for _, l in ipairs(vim.split(json.body, '\r\n')) do
+  for _, l in ipairs(vim.split(json.body, '\r?\n')) do
     lines[#lines+1] = l
   end
 
