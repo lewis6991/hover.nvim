@@ -5,6 +5,9 @@ local M = {}
 local providers = {}
 M.providers = providers
 
+local config
+local initialised = false
+
 local function is_enabled(provider)
   return provider.enabled == nil or provider.enabled()
 end
@@ -29,7 +32,25 @@ function M.register(provider)
   providers[#providers+1] = provider
 end
 
+local function init()
+  if initialised then
+    return
+  end
+  initialised = true
+
+  if config and type(config.init) == 'function' then
+    config.init()
+  end
+end
+
+
+M.setup = function(config0)
+  config = config0
+end
+
 M.hover_select = function()
+  init()
+
   local choices = {}
   for _, p in ipairs(providers) do
     if is_enabled(p) then
@@ -53,6 +74,8 @@ M.hover_select = function()
 end
 
 M.hover = async.void(function()
+  init()
+
   for _, provider in ipairs(providers) do
     if is_enabled(provider) then
       print('hover.nvim: Running '..provider.name)
