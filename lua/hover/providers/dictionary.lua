@@ -33,7 +33,7 @@ local function process(result)
   return lines
 end
 
-local execute = async.void(function(done)
+local execute = async.void(function(config, done)
   local word = fn.expand('<cword>')
 
   local output = job {
@@ -44,7 +44,7 @@ local execute = async.void(function(done)
 
   local results = process(output)
   if results then
-    util.open_floating_preview(results, "markdown")
+    util.open_floating_preview(results, "markdown", config.preview_opts)
   end
   done(results and true or false)
 end)

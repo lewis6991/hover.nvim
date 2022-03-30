@@ -33,7 +33,7 @@ local function process(result)
   return lines
 end
 
-local execute = async.void(function(done)
+local execute = async.void(function(config, done)
   local bufnr = api.nvim_get_current_buf()
   local cwd = fn.fnamemodify(api.nvim_buf_get_name(bufnr), ':p:h')
   local id = fn.expand('<cword>')
@@ -66,7 +66,7 @@ local execute = async.void(function(done)
   async.scheduler()
   local results = process(output)
   if results then
-    util.open_floating_preview(results, "markdown")
+    util.open_floating_preview(results, "markdown", config.preview_opts)
   end
   done(results and true or false)
 end)

@@ -17,7 +17,7 @@ local function process(result)
   return vim.split(result, '\n')
 end
 
-local execute = async.void(function(done)
+local execute = async.void(function(config, done)
   local is_tcl = vim.bo.filetype == 'tcl'
 
   local output = job {
@@ -28,7 +28,7 @@ local execute = async.void(function(done)
 
   local results = process(output)
   if results then
-    util.open_floating_preview(results, "man")
+    util.open_floating_preview(results, "man", config.preview_opts)
   end
   done(results and true or false)
 end)

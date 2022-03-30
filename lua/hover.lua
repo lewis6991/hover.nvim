@@ -19,7 +19,7 @@ function M.register(provider)
     return
   end
 
-  provider.execute = async.wrap(provider.execute, 1)
+  provider.execute = async.wrap(provider.execute, 2)
 
   if provider.priority then
     for i, p in ipairs(providers) do
@@ -46,6 +46,9 @@ end
 
 M.setup = function(config0)
   config = config0
+  config.preview_opts = {
+    border = 'single',
+  }
 end
 
 M.hover_select = function()
@@ -67,7 +70,7 @@ M.hover_select = function()
     },
     async.void(function(provider)
       if provider then
-        provider.execute()
+        provider.execute(config)
       end
     end)
   )
@@ -79,7 +82,7 @@ M.hover = async.void(function()
   for _, provider in ipairs(providers) do
     if is_enabled(provider) then
       print('hover.nvim: Running '..provider.name)
-      if provider.execute() ~= false then
+      if provider.execute(config) ~= false then
         return
       end
     end
