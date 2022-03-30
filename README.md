@@ -19,7 +19,8 @@ via packer:
       end,
       preview_opts = {
         border = nil
-      }
+      },
+      title = true
     }
 
     -- Setup keymaps

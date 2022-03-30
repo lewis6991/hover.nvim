@@ -4,7 +4,7 @@ local default_config = {
   preview_opts = {
     border = 'single'
   },
-  title = false
+  title = true
 }
 
 local config

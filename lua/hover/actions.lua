@@ -1,5 +1,6 @@
 local util = require('vim.lsp.util')
 local api = vim.api
+local npcall = vim.F.npcall
 
 local async = require('hover.async')
 
@@ -33,22 +34,52 @@ local function add_title(bufnr, active_provider_id)
   })
 end
 
+local function find_window_by_var(name, value)
+  for _, win in ipairs(api.nvim_list_wins()) do
+    if npcall(api.nvim_win_get_var, win, name) == value then
+      return win
+    end
+  end
+end
+
+local function focus_or_close_hover(bufnr, winnr)
+  -- Go back to previous window if we are in a focusable one
+  if npcall(api.nvim_win_get_var, winnr, 'hover') then
+    api.nvim_command("wincmd p")
+    return true
+  end
+  local win = find_window_by_var('hover', bufnr)
+  if win and api.nvim_win_is_valid(win) and vim.fn.pumvisible() == 0 then
+    -- focus and return the existing buf, win
+    api.nvim_set_current_win(win)
+    api.nvim_command("stopinsert")
+    return true
+  end
+  return false
+end
+
 local function run_provider(provider)
   print('hover.nvim: Running provider: '..provider.name)
   if provider then
+    local config = get_config()
+    local opts = vim.deepcopy(config.preview_opts)
+    opts.focus_id = 'hover'
+
+    if opts.focusable ~= false and opts.focus ~= false then
+      local cur_bufnr = api.nvim_get_current_buf()
+      local cur_winnr = api.nvim_get_current_win()
+      if focus_or_close_hover(cur_bufnr, cur_winnr) then
+        return true
+      end
+    end
+
     local result = provider.execute()
     if result then
       async.scheduler()
 
-      local config = get_config()
-
-      local opts = config.preview_opts
-
       if config.title then
         opts.pad_top = 1
       end
-
-      opts.focus_id = provider.name
 
       local bufnr = util.open_floating_preview(result.lines, result.filetype, opts)
 
