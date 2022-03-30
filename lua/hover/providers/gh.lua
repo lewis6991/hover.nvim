@@ -2,7 +2,6 @@ local api, fn = vim.api, vim.fn
 
 local async = require('hover.async')
 local job = require('hover.async.job').job
-local util = require('vim.lsp.util')
 
 local function enabled()
   return fn.expand('<cWORD>'):match('#%d+') ~= nil
@@ -33,7 +32,7 @@ local function process(result)
   return lines
 end
 
-local execute = async.void(function(config, done)
+local execute = async.void(function(done)
   local bufnr = api.nvim_get_current_buf()
   local cwd = fn.fnamemodify(api.nvim_buf_get_name(bufnr), ':p:h')
   local id = fn.expand('<cword>')
@@ -65,10 +64,7 @@ local execute = async.void(function(config, done)
 
   async.scheduler()
   local results = process(output)
-  if results then
-    util.open_floating_preview(results, "markdown", config.preview_opts)
-  end
-  done(results and true or false)
+  done(results and {lines=results, filetype="markdown"})
 end)
 
 require('hover').register {

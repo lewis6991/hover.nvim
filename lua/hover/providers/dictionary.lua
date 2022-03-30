@@ -2,7 +2,6 @@ local fn = vim.fn
 
 local async = require('hover.async')
 local job = require('hover.async.job').job
-local util = require('vim.lsp.util')
 
 local function enabled()
   local word = fn.expand('<cword>')
@@ -33,7 +32,7 @@ local function process(result)
   return lines
 end
 
-local execute = async.void(function(config, done)
+local execute = async.void(function(done)
   local word = fn.expand('<cword>')
 
   local output = job {
@@ -43,10 +42,7 @@ local execute = async.void(function(config, done)
   async.scheduler()
 
   local results = process(output)
-  if results then
-    util.open_floating_preview(results, "markdown", config.preview_opts)
-  end
-  done(results and true or false)
+  done(results and {lines=results, filetype="markdown"})
 end)
 
 require('hover').register {

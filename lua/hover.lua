@@ -19,7 +19,7 @@ function M.register(provider)
     return
   end
 
-  provider.execute = async.wrap(provider.execute, 2)
+  provider.execute = async.wrap(provider.execute, 1)
 
   if provider.priority then
     for i, p in ipairs(providers) do
@@ -70,7 +70,7 @@ M.hover_select = function()
     },
     async.void(function(provider)
       if provider then
-        provider.execute(config)
+        provider.execute()
       end
     end)
   )
@@ -82,7 +82,10 @@ M.hover = async.void(function()
   for _, provider in ipairs(providers) do
     if is_enabled(provider) then
       print('hover.nvim: Running '..provider.name)
-      if provider.execute(config) ~= false then
+      local result = provider.execute()
+      if result then
+        local util = require('vim.lsp.util')
+        util.open_floating_preview(result.lines, result.filetype, config.preview_opts)
         return
       end
     end
