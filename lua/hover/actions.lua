@@ -42,7 +42,10 @@ local function find_window_by_var(name, value)
   end
 end
 
-local function focus_or_close_hover(bufnr, winnr)
+local function focus_or_close_hover()
+  local bufnr = api.nvim_get_current_buf()
+  local winnr = api.nvim_get_current_win()
+
   -- Go back to previous window if we are in a focusable one
   if npcall(api.nvim_win_get_var, winnr, 'hover') then
     api.nvim_command("wincmd p")
@@ -58,38 +61,38 @@ local function focus_or_close_hover(bufnr, winnr)
   return false
 end
 
+local function show_hover(provider_id, config, result, opts)
+  if config.title then
+    opts.pad_top = 1
+  end
+
+  local bufnr = util.open_floating_preview(result.lines, result.filetype, opts)
+
+  if config.title then
+    add_title(bufnr, provider_id)
+  end
+end
+
+-- Must be called in async context
 local function run_provider(provider)
   print('hover.nvim: Running provider: '..provider.name)
-  if provider then
-    local config = get_config()
-    local opts = vim.deepcopy(config.preview_opts)
-    opts.focus_id = 'hover'
+  local config = get_config()
+  local opts = vim.deepcopy(config.preview_opts)
+  opts.focus_id = 'hover'
 
-    if opts.focusable ~= false and opts.focus ~= false then
-      local cur_bufnr = api.nvim_get_current_buf()
-      local cur_winnr = api.nvim_get_current_win()
-      if focus_or_close_hover(cur_bufnr, cur_winnr) then
-        return true
-      end
-    end
-
-    local result = provider.execute()
-    if result then
-      async.scheduler()
-
-      if config.title then
-        opts.pad_top = 1
-      end
-
-      local bufnr = util.open_floating_preview(result.lines, result.filetype, opts)
-
-      if config.title then
-        add_title(bufnr, provider.id)
-      end
-
+  if opts.focusable ~= false and opts.focus ~= false then
+    if focus_or_close_hover() then
       return true
     end
   end
+
+  local result = provider.execute()
+  if result then
+    async.scheduler()
+    show_hover(provider.id, config, result, opts)
+    return true
+  end
+
   return false
 end
 
