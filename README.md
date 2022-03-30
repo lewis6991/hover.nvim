@@ -1,6 +1,8 @@
 
 WIP
 
+# hover.nvim
+
 General framework for context aware hover providers (similar to `vim.lsp.buf.hover`).
 
 ## Screenshots
