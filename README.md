@@ -1,7 +1,26 @@
 
 WIP
 
-Goal: general framework for providing hover providers similar to `vim.lsp.buf.hover`
+Goal: general framework for providing context aware hover providers similar to `vim.lsp.buf.hover`
+
+## Screenshots
+
+<table>
+  <tr>
+    <td>LSP</td>
+    <td>Github Issues</td>
+  </tr>
+  <tr>
+    <td><img src="https://user-images.githubusercontent.com/7904185/160881442-1dcd0ccd-9b8c-4bd2-ad32-3fcd675c414d.png"></td>
+    <td><img src="https://user-images.githubusercontent.com/7904185/160881424-6fb8d9a0-ced1-4240-a4bf-0991cdbff751.png"></td>
+  </tr>
+  <tr>
+     <td>Dictionary</td>
+  </tr>
+  <tr>
+    <td><img src="https://user-images.githubusercontent.com/7904185/160881416-29017747-85df-45be-b704-452ec8f3a8f6.png"></td>
+  </tr>
+ </table>
 
 ## Setup and Installation
 
