@@ -5,6 +5,8 @@ local M  = {}
 local providers = {}
 M.providers = providers
 
+local id_cnt = 0
+
 function M.register(provider)
   if not provider.execute or type(provider.execute) ~= 'function' then
     print(string.format('error: hover provider %s does not provide an execute function',
@@ -13,6 +15,8 @@ function M.register(provider)
   end
 
   provider.execute = async.wrap(provider.execute, 1)
+  provider.id = id_cnt
+  id_cnt  = id_cnt + 1
 
   if provider.priority then
     for i, p in ipairs(providers) do

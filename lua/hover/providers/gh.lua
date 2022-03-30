@@ -62,7 +62,6 @@ local execute = async.void(function(done)
     end
   end
 
-  async.scheduler()
   local results = process(output)
   done(results and {lines=results, filetype="markdown"})
 end)
