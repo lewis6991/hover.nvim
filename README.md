@@ -1,7 +1,7 @@
 
 WIP
 
-Goal: general framework for providing context aware hover providers similar to `vim.lsp.buf.hover`
+General framework for context aware hover providers (similar to `vim.lsp.buf.hover`).
 
 ## Screenshots
 
