@@ -15,23 +15,18 @@ local function is_enabled(provider)
   return provider.enabled == nil or provider.enabled()
 end
 
-local ns = api.nvim_create_namespace('hover')
-
-local function add_title(bufnr, active_provider_id)
+local function add_title(winnr, active_provider_id)
   local title = {}
 
   for _, p in ipairs(providers) do
     if is_enabled(p) then
       local hl = p.id == active_provider_id and 'TabLineSel' or 'TabLineFill'
-      title[#title+1] = {string.format(' %s ', p.name), hl}
-      title[#title+1] = {' ', 'Normal'}
+      title[#title+1] = string.format('%%#%s# %s ', hl, p.name)
+      title[#title+1] = '%#Normal# '
     end
   end
 
-  api.nvim_buf_set_extmark(bufnr, ns, 0, 0, {
-    virt_text = title,
-    virt_text_pos = 'overlay'
-  })
+  vim.wo[winnr].winbar = table.concat(title, '')
 end
 
 local function find_window_by_var(name, value)
@@ -62,14 +57,10 @@ local function focus_or_close_hover()
 end
 
 local function show_hover(provider_id, config, result, opts)
-  if config.title then
-    opts.pad_top = 1
-  end
-
-  local bufnr = util.open_floating_preview(result.lines, result.filetype, opts)
+  local _, winnr = util.open_floating_preview(result.lines, result.filetype, opts)
 
   if config.title then
-    add_title(bufnr, provider_id)
+    add_title(winnr, provider_id)
   end
 end
 
