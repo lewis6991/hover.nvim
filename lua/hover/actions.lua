@@ -1,6 +1,9 @@
 local util = require('vim.lsp.util')
+local vim = vim
 local api = vim.api
 local npcall = vim.F.npcall
+
+local has_winbar = vim.fn.has('nvim-0.8') == 1
 
 local async = require('hover.async')
 
@@ -16,6 +19,12 @@ local function is_enabled(provider)
 end
 
 local function add_title(winnr, active_provider_id)
+  if not has_winbar then
+    vim.notify_once('hover.nvim: `config.title` requires neovim >= 0.8.0',
+                    vim.log.levels.WARN)
+    return
+  end
+
   local title = {}
 
   for _, p in ipairs(providers) do
