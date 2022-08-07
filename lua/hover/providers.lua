@@ -9,8 +9,8 @@ local id_cnt = 0
 
 function M.register(provider)
   if not provider.execute or type(provider.execute) ~= 'function' then
-    print(string.format('error: hover provider %s does not provide an execute function',
-      provider.name or 'NA'))
+    vim.notify(string.format('error: hover provider %s does not provide an execute function',
+      provider.name or 'NA'), vim.log.levels.ERROR)
     return
   end
 
