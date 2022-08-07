@@ -10,7 +10,8 @@ end
 local function process(result)
   local ok, json = pcall(vim.json.decode, result)
   if not ok then
-    vim.notify "Failed to parse gh result"
+    async.scheduler()
+    vim.notify("Failed to parse gh result", vim.log.levels.ERROR)
     return
   end
 
