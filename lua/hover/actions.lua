@@ -75,7 +75,7 @@ end
 
 -- Must be called in async context
 local function run_provider(provider)
-  print('hover.nvim: Running provider: '..provider.name)
+  vim.api.nvim_echo({{'hover.nvim: Running provider: '..provider.name}}, false, {})
   local config = get_config()
   local opts = vim.deepcopy(config.preview_opts)
   opts.focus_id = 'hover'
@@ -117,7 +117,7 @@ M.hover = async.void(function()
       return
     end
   end
-  print('hover.nvim: could not find any hover providers')
+  vim.api.nvim_echo({{'hover.nvim: could not find any hover providers', 'WarningMsg'}}, false, {})
 end)
 
 M.hover_select = function()
