@@ -131,7 +131,11 @@ M.hover_select = function()
         return provider.name
       end
     },
-    async.void(run_provider)
+    function (provider)
+      if provider then
+        async.void(run_provider)(provider)
+      end
+    end
   )
 end
 
