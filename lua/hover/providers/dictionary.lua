@@ -9,7 +9,8 @@ end
 local function process(result)
   local ok, res = pcall(vim.json.decode, result)
   if not ok or not res[1] then
-    -- vim.notify "Failed to parse dictionary response"
+    -- async.scheduler()
+    -- vim.notify("Failed to parse dictionary response", vim.log.levels.ERROR)
     return
   end
 
