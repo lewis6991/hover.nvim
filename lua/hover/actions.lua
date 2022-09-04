@@ -36,6 +36,10 @@ local function add_title(winnr, active_provider_id)
   end
 
   vim.wo[winnr].winbar = table.concat(title, '')
+  local config = vim.api.nvim_win_get_config(winnr)
+  vim.api.nvim_win_set_config(winnr, {
+    height = config.height + 1
+  })
 end
 
 local function find_window_by_var(name, value)
