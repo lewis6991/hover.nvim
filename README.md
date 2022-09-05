@@ -29,30 +29,28 @@ General framework for context aware hover providers (similar to `vim.lsp.buf.hov
 via packer:
 
 ```lua
-use(
-    {
-        "lewis6991/hover.nvim",
-        config = function()
-            require("hover").setup {
-                init = function()
-                    -- Require providers
-                    require("hover.providers.lsp")
-                    -- require('hover.providers.gh')
-                    -- require('hover.providers.man')
-                    -- require('hover.providers.dictionary')
-                end,
-                preview_opts = {
-                    border = nil
-                },
-                title = true
-            }
+use {
+    "lewis6991/hover.nvim",
+    config = function()
+        require("hover").setup {
+            init = function()
+                -- Require providers
+                require("hover.providers.lsp")
+                -- require('hover.providers.gh')
+                -- require('hover.providers.man')
+                -- require('hover.providers.dictionary')
+            end,
+            preview_opts = {
+                border = nil
+            },
+            title = true
+        }
 
-            -- Setup keymaps
-            vim.keymap.set("n", "K", require("hover").hover, {desc = "hover.nvim"})
-            vim.keymap.set("n", "gK", require("hover").hover_select, {desc = "hover.nvim (select)"})
-        end
-    }
-)
+        -- Setup keymaps
+        vim.keymap.set("n", "K", require("hover").hover, {desc = "hover.nvim"})
+        vim.keymap.set("n", "gK", require("hover").hover_select, {desc = "hover.nvim (select)"})
+    end
+}
 ```
 
 ## Built in Providers
