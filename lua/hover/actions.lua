@@ -26,19 +26,22 @@ local function add_title(winnr, active_provider_id)
   end
 
   local title = {}
+  local winbar_length = 0
 
   for _, p in ipairs(providers) do
     if is_enabled(p) then
       local hl = p.id == active_provider_id and 'TabLineSel' or 'TabLineFill'
       title[#title+1] = string.format('%%#%s# %s ', hl, p.name)
       title[#title+1] = '%#Normal# '
+      winbar_length = winbar_length + #p.name + 2 -- + 2 for whitespace padding
     end
   end
 
   vim.wo[winnr].winbar = table.concat(title, '')
   local config = vim.api.nvim_win_get_config(winnr)
   vim.api.nvim_win_set_config(winnr, {
-    height = config.height + 1
+    height = config.height + 1,
+    width = math.max(config.width, winbar_length + 2) -- + 2 for border
   })
 end
 
