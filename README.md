@@ -37,6 +37,7 @@ use {
                 -- Require providers
                 require("hover.providers.lsp")
                 -- require('hover.providers.gh')
+                -- require('hover.providers.jira')
                 -- require('hover.providers.man')
                 -- require('hover.providers.dictionary')
             end,
@@ -70,6 +71,15 @@ Opens issue/PR's for symbols like `#123`.
 Requires the `gh` command.
 
 Priority: 200
+
+### Jira
+`require('hover.providers.jira')`
+
+Opens issue for symbols like `ABC-123`.
+
+Requires the `jira` [command](https://github.com/ankitpokhrel/jira-cli).
+
+Priority: 175
 
 ### Man
 `require('hover.providers.man')`
