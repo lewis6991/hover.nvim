@@ -6,12 +6,9 @@ local function enabled()
 end
 
 local function execute(done)
-    local bufnr = vim.api.nvim_get_current_buf()
-    local cwd = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ':p:h')
-
     local query = vim.fn.expand('<cWORD>')
 
-    job({'jira', 'issue', 'view', query, '--plain', cwd = cwd}, function(result)
+    job({'jira', 'issue', 'view', query, '--plain'}, function(result)
         if result == nil then
             done(false)
             return
