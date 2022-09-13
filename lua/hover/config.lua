@@ -5,7 +5,7 @@ local default_config = {
   preview_opts = {
     border = 'single'
   },
-  use_preview_window = true,
+  use_preview_window = false,
   title = true
 }
 
