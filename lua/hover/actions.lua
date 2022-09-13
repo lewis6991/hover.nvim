@@ -38,8 +38,8 @@ local function add_title(winnr, active_provider_id)
   end
 
   vim.wo[winnr].winbar = table.concat(title, '')
-  local config = vim.api.nvim_win_get_config(winnr)
-  vim.api.nvim_win_set_config(winnr, {
+  local config = api.nvim_win_get_config(winnr)
+  api.nvim_win_set_config(winnr, {
     height = config.height + 1,
     width = math.max(config.width, winbar_length + 2) -- + 2 for border
   })
@@ -73,8 +73,8 @@ local function focus_or_close_floating_window()
 end
 
 local function get_preview_window()
-  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(vim.api.nvim_get_current_tabpage())) do
-    if vim.api.nvim_win_get_option(win, 'previewwindow') then
+  for _, win in ipairs(api.nvim_tabpage_list_wins(api.nvim_get_current_tabpage())) do
+    if vim.wo[win].previewwindow then
       return win
     end
   end
@@ -83,9 +83,9 @@ end
 local function create_preview_window()
   vim.cmd.new()
   vim.cmd.stopinsert()
-  local pwin = vim.api.nvim_get_current_win()
-  vim.api.nvim_win_set_option(pwin, 'previewwindow', true)
-  vim.api.nvim_win_set_height(pwin, vim.api.nvim_get_option('previewheight'))
+  local pwin = api.nvim_get_current_win()
+  vim.wo[pwin].previewwindow = true
+  api.nvim_win_set_height(pwin, api.nvim_get_option('previewheight'))
   return pwin
 end
 
@@ -95,7 +95,7 @@ local function send_to_preview_window()
   if not hover_win or not api.nvim_win_is_valid(hover_win) then
     return false
   end
-  local hover_bufnr = vim.api.nvim_win_get_buf(hover_win)
+  local hover_bufnr = api.nvim_win_get_buf(hover_win)
   if not hover_bufnr or not api.nvim_buf_is_valid(hover_bufnr) then
     return false
   end
@@ -103,9 +103,9 @@ local function send_to_preview_window()
     return false
   end
   local pwin = get_preview_window() or create_preview_window()
-  vim.api.nvim_win_set_buf(pwin, hover_bufnr)
+  api.nvim_win_set_buf(pwin, hover_bufnr)
   vim.wo[pwin].winbar = vim.wo[hover_win].winbar
-  vim.api.nvim_win_close(hover_win, true)
+  api.nvim_win_close(hover_win, true)
   return true
 end
 
