@@ -110,7 +110,7 @@ local function send_to_preview_window()
 end
 
 local function do_hover()
-  if get_config().use_preview_window then
+  if get_config().preview_window then
     return send_to_preview_window()
   else
     return focus_or_close_floating_window()
