@@ -6,6 +6,7 @@ local exports = {
   hover_select = 'hover.actions'
 }
 
+---@param user_config HoverConfig
 function M.setup(user_config)
   require('hover.config').set(user_config)
 end

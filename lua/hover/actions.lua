@@ -38,8 +38,8 @@ local function add_title(winnr, active_provider_id)
   end
 
   vim.wo[winnr].winbar = table.concat(title, '')
-  local config = vim.api.nvim_win_get_config(winnr)
-  vim.api.nvim_win_set_config(winnr, {
+  local config = api.nvim_win_get_config(winnr)
+  api.nvim_win_set_config(winnr, {
     height = config.height + 1,
     width = math.max(config.width, winbar_length + 2) -- + 2 for border
   })
@@ -53,7 +53,7 @@ local function find_window_by_var(name, value)
   end
 end
 
-local function focus_or_close_hover()
+local function focus_or_close_floating_window()
   local bufnr = api.nvim_get_current_buf()
   local winnr = api.nvim_get_current_win()
 
@@ -72,6 +72,51 @@ local function focus_or_close_hover()
   return false
 end
 
+local function get_preview_window()
+  for _, win in ipairs(api.nvim_tabpage_list_wins(api.nvim_get_current_tabpage())) do
+    if vim.wo[win].previewwindow then
+      return win
+    end
+  end
+end
+
+local function create_preview_window()
+  vim.cmd.new()
+  vim.cmd.stopinsert()
+  local pwin = api.nvim_get_current_win()
+  vim.wo[pwin].previewwindow = true
+  api.nvim_win_set_height(pwin, api.nvim_get_option('previewheight'))
+  return pwin
+end
+
+local function send_to_preview_window()
+  local bufnr = api.nvim_get_current_buf()
+  local hover_win = find_window_by_var('hover', bufnr)
+  if not hover_win or not api.nvim_win_is_valid(hover_win) then
+    return false
+  end
+  local hover_bufnr = api.nvim_win_get_buf(hover_win)
+  if not hover_bufnr or not api.nvim_buf_is_valid(hover_bufnr) then
+    return false
+  end
+  if vim.fn.pumvisible() ~= 0 then
+    return false
+  end
+  local pwin = get_preview_window() or create_preview_window()
+  api.nvim_win_set_buf(pwin, hover_bufnr)
+  vim.wo[pwin].winbar = vim.wo[hover_win].winbar
+  api.nvim_win_close(hover_win, true)
+  return true
+end
+
+local function do_hover()
+  if get_config().preview_window then
+    return send_to_preview_window()
+  else
+    return focus_or_close_floating_window()
+  end
+end
+
 local function show_hover(provider_id, config, result, opts)
   local _, winnr = util.open_floating_preview(result.lines, result.filetype, opts)
 
@@ -80,7 +125,7 @@ local function show_hover(provider_id, config, result, opts)
   end
 end
 
--- Must be called in async context
+---@async
 local function run_provider(provider)
   api.nvim_echo({{'hover.nvim: Running provider: '..provider.name}}, false, {})
   local config = get_config()
@@ -88,7 +133,7 @@ local function run_provider(provider)
   opts.focus_id = 'hover'
 
   if opts.focusable ~= false and opts.focus ~= false then
-    if focus_or_close_hover() then
+    if do_hover() then
       return true
     end
   end
