@@ -1,12 +1,14 @@
 local job = require('hover.async.job').job
 
+local issue_pattern = '%u%u+-%d+'
+
 local function enabled()
     -- Match 2 or more uppercase letters followed by a '-' and 1 or more digits.
-    return vim.fn.expand('<cWORD>'):match('%u%u+-%d+') ~= nil
+    return vim.fn.expand('<cWORD>'):match(issue_pattern) ~= nil
 end
 
 local function execute(done)
-    local query = vim.fn.expand('<cWORD>')
+    local query = vim.fn.expand('<cWORD>'):match(issue_pattern)
 
     job({'jira', 'issue', 'view', query, '--plain'}, function(result)
         if result == nil then
