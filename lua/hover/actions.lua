@@ -106,7 +106,7 @@ local function send_to_preview_window()
   local pwin = get_preview_window() or create_preview_window()
   local pwin_prev_buf = api.nvim_win_get_buf(pwin)
   api.nvim_win_set_buf(pwin, hover_bufnr)
-  -- Unload the empty buffer created when creating preview window
+  -- Unload the empty buffer created along with creating preview window
   local bufexist, buflinecnt = pcall(api.nvim_buf_line_count, pwin_prev_buf)
   if bufexist and buflinecnt == 1 and
     api.nvim_buf_get_lines(pwin_prev_buf, 0, -1, false)[1] == "" then
