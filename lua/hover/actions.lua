@@ -103,7 +103,13 @@ local function send_to_preview_window()
     return false
   end
   local pwin = get_preview_window() or create_preview_window()
+  local pwin_prev_buf = api.nvim_win_get_buf(pwin)
   api.nvim_win_set_buf(pwin, hover_bufnr)
+  -- Unload the empty buffer created along with preview window
+  if api.nvim_buf_line_count(pwin_prev_buf) == 1 and
+    api.nvim_buf_get_lines(pwin_prev_buf, 0, -1, false)[1] == "" then
+    api.nvim_buf_delete(pwin_prev_buf, {})
+  end
   vim.wo[pwin].winbar = vim.wo[hover_win].winbar
   api.nvim_win_close(hover_win, true)
   return true
