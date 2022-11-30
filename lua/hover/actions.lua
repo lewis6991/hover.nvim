@@ -1,4 +1,3 @@
-local util = require('vim.lsp.util')
 local vim = vim
 local api = vim.api
 local npcall = vim.F.npcall
@@ -127,7 +126,8 @@ local function do_hover()
 end
 
 local function show_hover(provider_id, config, result, opts)
-  local _, winnr = util.open_floating_preview(result.lines, result.filetype, opts)
+  local util = require('hover.util')
+  local _, winnr = util.open_floating_preview(result.lines, result.bufnr, result.filetype, opts)
 
   if config.title then
     add_title(winnr, provider_id)

@@ -1,5 +1,6 @@
+local api = vim.api
+
 local async = require('hover.async')
-local job = require('hover.async.job').job
 
 local function enabled()
   return vim.tbl_contains({
@@ -8,18 +9,23 @@ local function enabled()
 end
 
 local execute = async.void(function(done)
-  local is_tcl = vim.bo.filetype == 'tcl'
+  local word = vim.fn.expand('<cword>')
+  local section = vim.bo.filetype == 'tcl' and 'n' or '1'
+  local uri = string.format('man://%s(%s)', word, section)
 
-  local output = job { 'man', is_tcl and 'n' or '1', vim.fn.expand('<cword>') }
+  local bufnr = api.nvim_create_buf(false, true)
 
-  if not output then
+  local ok = pcall(api.nvim_buf_call, bufnr, function()
+    api.nvim_exec_autocmds('BufReadCmd', { pattern = uri })
+  end)
+
+  if not ok or api.nvim_buf_line_count(bufnr) <= 1 then
+    api.nvim_buf_delete(bufnr, {force = true})
     done()
     return
   end
 
-  local lines = vim.split(output, '\n')
-
-  done{lines=lines, filetype="man"}
+  done{ bufnr = bufnr }
 end)
 
 require('hover').register {
