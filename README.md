@@ -18,9 +18,11 @@ General framework for context aware hover providers (similar to `vim.lsp.buf.hov
   </tr>
   <tr>
      <td>Dictionary</td>
+     <td>Github User</td>
   </tr>
   <tr>
     <td><img src="https://user-images.githubusercontent.com/7904185/160881416-29017747-85df-45be-b704-452ec8f3a8f6.png"></td>
+    <td><img src="https://user-images.githubusercontent.com/7904185/204776925-c28354d2-74f5-4d1e-b699-082eea9217dc.png"></td>
   </tr>
  </table>
 
