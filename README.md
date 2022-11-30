@@ -123,6 +123,7 @@ Call `require('hover').register(<provider>)` with a table containing the followi
         - A table with the following fields:
           - `lines` (string array)
           - `filetype` (string)
+          - `bufnr` (integer?) use a pre-populated buffer for the hover window. Ignores `lines`.
 - `priority`: number (optional), priority of the provider
 
 
