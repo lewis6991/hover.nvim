@@ -37,6 +37,7 @@ use {
                 -- Require providers
                 require("hover.providers.lsp")
                 -- require('hover.providers.gh')
+                -- require('hover.providers.gh_user')
                 -- require('hover.providers.jira')
                 -- require('hover.providers.man')
                 -- require('hover.providers.dictionary')
@@ -66,10 +67,20 @@ Builtin LSP
 
 Priority: 1000
 
-### Github
+### Github: Issues and PR's
 `require('hover.providers.gh')`
 
 Opens issue/PR's for symbols like `#123`.
+
+Requires the `gh` command.
+
+Priority: 200
+
+### Github: Users
+`require('hover.providers.gh_user')`
+
+Information for github users in `TODO` comments.
+Matches `TODO(<user>)` and `TODO(@<user>)`.
 
 Requires the `gh` command.
 
