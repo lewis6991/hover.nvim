@@ -46,6 +46,7 @@ local execute = async.void(function(done)
 
   local repo, num = word:match('(%w+/%w+)#(%d+)')
   if repo then
+    ---@type string[]
     output = job {
       'gh', 'issue', 'view', '--json', fields, num, '-R', repo,
       cwd = cwd
@@ -53,6 +54,7 @@ local execute = async.void(function(done)
   else
     num = word:match('#(%d+)')
     if num then
+      ---@type string[]
       output = job {
         'gh', 'issue', 'view', '--json', fields, id,
         cwd = cwd

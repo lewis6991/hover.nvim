@@ -3,12 +3,14 @@ local api, fn = vim.api, vim.fn
 local async = require('hover.async')
 local job = require('hover.async.job').job
 
+---@return string
 local function get_user()
   local WORD = fn.expand('<cWORD>')
   local user = WORD:match('TODO%(@?(.*)%):')
   return user
 end
 
+---@type boolean
 local function enabled()
   return get_user() ~= nil
 end
@@ -25,6 +27,7 @@ local function process(result)
     return
   end
 
+  ---@type string[]
   local res = {}
 
   for _, key in ipairs {
@@ -60,6 +63,7 @@ local execute = async.void(function(done)
   if not user then
     done(false)
   end
+  ---@type string[]
   local output = job { 'gh', 'api', 'users/'..user, cwd = cwd }
   local results = process(output)
   done(results and {lines=results, filetype="markdown"})

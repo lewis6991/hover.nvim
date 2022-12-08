@@ -14,8 +14,10 @@ local function process(result)
     return
   end
 
+  ---@type table
   local json = res[1]
 
+  ---@type string[]
   local lines = {
     json.word,
   }
@@ -34,6 +36,7 @@ end
 local execute = async.void(function(done)
   local word = vim.fn.expand('<cword>')
 
+  ---@type string[]
   local output = job {
     'curl', 'https://api.dictionaryapi.dev/api/v2/entries/en/'..word
   }

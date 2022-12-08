@@ -2,7 +2,7 @@ require('hover').register {
   name = 'LSP',
   priority = 1000,
   enabled = function()
-    for _, client in pairs(vim.lsp.buf_get_clients()) do
+    for _, client in pairs(vim.lsp.get_active_clients()) do
       if client and client.supports_method('textDocument/hover') then
         return true
       end

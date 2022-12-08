@@ -1,4 +1,3 @@
-local vim = vim
 local api = vim.api
 local npcall = vim.F.npcall
 
@@ -24,6 +23,7 @@ local function add_title(winnr, active_provider_id)
     return
   end
 
+  ---@type string[]
   local title = {}
   local winbar_length = 0
 
@@ -44,6 +44,9 @@ local function add_title(winnr, active_provider_id)
   })
 end
 
+---@param name string
+---@param value any
+---@return integer?
 local function find_window_by_var(name, value)
   for _, win in ipairs(api.nvim_list_wins()) do
     if npcall(api.nvim_win_get_var, win, name) == value then
@@ -135,6 +138,7 @@ local function show_hover(provider_id, config, result, opts)
 end
 
 ---@async
+---@param provider Provider
 local function run_provider(provider)
   api.nvim_echo({{'hover.nvim: Running provider: '..provider.name}}, false, {})
   local config = get_config()
@@ -147,7 +151,7 @@ local function run_provider(provider)
     end
   end
 
-  local result = provider.execute()
+  local result = provider.execute_a()
   if result then
     async.scheduler()
     show_hover(provider.id, config, result, opts)
@@ -169,6 +173,7 @@ local function init()
   end
 end
 
+---@async
 M.hover = async.void(function()
   init()
 

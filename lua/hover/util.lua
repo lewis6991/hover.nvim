@@ -62,6 +62,7 @@ local function trim_empty_lines(lines)
   return vim.list_extend({}, lines, start, finish)
 end
 
+---@type ({[1]: string, [2]: string}|string)[]
 local default_border = {
   { '' , 'NormalFloat' },
   { '' , 'NormalFloat' },
@@ -143,6 +144,8 @@ local function get_border_size(opts)
       ))
     end
 
+    ---@param id integer
+    ---@return integer
     local function border_width(id)
       id = (id - 1) % #border + 1
       if type(border[id]) == 'table' then
@@ -150,7 +153,7 @@ local function get_border_size(opts)
         return vim.fn.strdisplaywidth(border[id][1])
       elseif type(border[id]) == 'string' then
         -- border specified as a list of border characters
-        return vim.fn.strdisplaywidth(border[id])
+        return vim.fn.strdisplaywidth(border[id] --[[@as string]])
       end
       error(
         string.format(

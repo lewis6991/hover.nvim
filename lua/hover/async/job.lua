@@ -2,7 +2,10 @@ local async = require('hover.async')
 
 local M = {}
 
+---@async
+---@return string[]
 M.job = async.wrap(function(obj, callback)
+  ---@type string[]
   local stdout_data = {}
   local stdout = vim.loop.new_pipe(false)
 

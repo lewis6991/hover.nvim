@@ -1,6 +1,7 @@
 local co = coroutine
 
 local async_thread = {
+  ---@type {[string]: boolean}
   threads = {},
 }
 
@@ -54,7 +55,11 @@ end
 
 local M = {}
 
+---@param func function
+---@param argc integer
+---@return function
 function M.wrap(func, argc)
+  ---@async
   return function(...)
     if not async_thread.inside() then
       return func(...)

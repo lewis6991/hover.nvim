@@ -1,6 +1,7 @@
 local M = {}
 
 ---@class HoverConfig
+---@field init fun()
 local default_config = {
   preview_opts = {
     border = 'single'

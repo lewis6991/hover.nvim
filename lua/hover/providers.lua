@@ -2,6 +2,15 @@ local async = require('hover.async')
 
 local M  = {}
 
+---@class Provider
+---@field priority integer
+---@field id integer
+---@field name string
+---@field execute fun(done: fun(result:any))
+---@field execute_a fun(): any
+---@field enabled fun(): boolean
+
+---@type Provider[]
 local providers = {}
 M.providers = providers
 
@@ -14,7 +23,7 @@ function M.register(provider)
     return
   end
 
-  provider.execute = async.wrap(provider.execute, 1)
+  provider.execute_a = async.wrap(provider.execute, 1)
   provider.id = id_cnt
   id_cnt  = id_cnt + 1
 
