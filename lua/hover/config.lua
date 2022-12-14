@@ -7,6 +7,7 @@ local default_config = {
     border = 'single'
   },
   preview_window = false,
+  profile = vim.log.levels.INFO,
   title = true
 }
 
