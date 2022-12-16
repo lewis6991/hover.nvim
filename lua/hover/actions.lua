@@ -141,7 +141,7 @@ end
 ---@param provider Provider
 local function run_provider(provider)
   local config = get_config()
-  if config.profile <= vim.log.levels.INFO then
+  if config.log_level <= vim.log.levels.INFO then
     api.nvim_echo({{'hover.nvim: Running provider: '..provider.name}}, false, {})
   end
 
@@ -189,7 +189,7 @@ M.hover = async.void(function()
     end
   end
 
-  if config.profile <= vim.log.levels.WARN then
+  if config.log_level <= vim.log.levels.WARN then
     api.nvim_echo({{'hover.nvim: could not find any hover providers', 'WarningMsg'}}, false, {})
   end
 end)
