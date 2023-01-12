@@ -16,6 +16,7 @@ local execute = async.void(function(done)
   local bufnr = api.nvim_create_buf(false, true)
 
   local ok = pcall(api.nvim_buf_call, bufnr, function()
+    -- This will execute when the buffer is hidden
     api.nvim_exec_autocmds('BufReadCmd', { pattern = uri })
   end)
 
@@ -24,6 +25,15 @@ local execute = async.void(function(done)
     done()
     return
   end
+
+  -- Run BufReadCmd again to resize properly
+  api.nvim_create_autocmd('BufWinEnter', {
+    buffer = bufnr,
+    once = true,
+    callback = function()
+      api.nvim_exec_autocmds('BufReadCmd', { pattern = uri })
+    end
+  })
 
   done{ bufnr = bufnr }
 end)
