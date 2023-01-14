@@ -7,7 +7,8 @@ local default_config = {
     border = 'single'
   },
   preview_window = false,
-  title = true
+  title = true,
+  diagnostics = false,
 }
 
 ---@type HoverConfig

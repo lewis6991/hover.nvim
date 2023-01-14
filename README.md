@@ -47,7 +47,9 @@ use {
             -- Whether the contents of a currently open hover window should be moved
             -- to a :h preview-window when pressing the hover keymap.
             preview_window = false,
-            title = true
+            title = true,
+
+            diagnostics = false,
         }
 
         -- Setup keymaps
