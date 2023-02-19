@@ -140,8 +140,10 @@ end
 ---@async
 ---@param provider Provider
 local function run_provider(provider)
-  api.nvim_echo({{'hover.nvim: Running provider: '..provider.name}}, false, {})
   local config = get_config()
+  if not config.quiet then
+    api.nvim_echo({{'hover.nvim: Running provider: '..provider.name}}, false, {})
+  end
   local opts = vim.deepcopy(config.preview_opts)
   opts.focus_id = 'hover'
 
@@ -184,8 +186,8 @@ M.hover = async.void(function()
     end
   end
   local config = get_config()
-  if config.err_on_nomatch then
-      api.nvim_echo({{'hover.nvim: could not find any hover providers', 'WarningMsg'}}, false, {})
+  if not config.quiet then
+    api.nvim_echo({{'hover.nvim: could not find any hover providers', 'WarningMsg'}}, false, {})
   end
 end)
 
