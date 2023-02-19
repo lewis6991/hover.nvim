@@ -183,7 +183,10 @@ M.hover = async.void(function()
       return
     end
   end
-  api.nvim_echo({{'hover.nvim: could not find any hover providers', 'WarningMsg'}}, false, {})
+  local config = get_config()
+  if config.err_on_nomatch then
+      api.nvim_echo({{'hover.nvim: could not find any hover providers', 'WarningMsg'}}, false, {})
+  end
 end)
 
 M.hover_select = function()
