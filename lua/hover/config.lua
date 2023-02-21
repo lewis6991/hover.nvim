@@ -7,6 +7,7 @@ local default_config = {
     border = 'single'
   },
   preview_window = false,
+  quiet = false,
   title = true
 }
 
