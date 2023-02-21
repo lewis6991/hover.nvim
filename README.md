@@ -29,7 +29,7 @@ via packer:
 
 ```lua
 use {
-    "lewis6991/hover.nvim",
+    "miversen33/hover.nvim",
     config = function()
         require("hover").setup {
             init = function()
@@ -138,3 +138,22 @@ require('hover').register {
    end
 }
 ```
+
+### Config:
+
+The configuration object that can be provided to hover's setup function has the following items (and defaults) available for use
+```lua
+{
+    preview_opts = {
+
+    }
+}
+```
+
+| Key | Type | Default | Options |
+|-----|------|---------|---------|
+| preview_opts | Table | `{ border = 'single'}` | |
+| preview_opts.border | String | 'single' | 'double', 'rounded', 'solid', shadow' |
+| quiet | boolean | false | true, false |
+| title | boolean | true | true, false |
+| preview_window | boolean | false | true, false |
