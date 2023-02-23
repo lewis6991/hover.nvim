@@ -1,7 +1,6 @@
 local api, fn = vim.api, vim.fn
 
 local async = require('hover.async')
-local job = require('hover.async.job').job
 
 ---@return string
 local function get_user()
@@ -10,7 +9,7 @@ local function get_user()
   return user
 end
 
----@type boolean
+---@return boolean
 local function enabled()
   return get_user() ~= nil
 end
@@ -26,6 +25,8 @@ local function process(result)
     vim.notify("Failed to parse gh user result", vim.log.levels.ERROR)
     return
   end
+
+  assert(json)
 
   ---@type string[]
   local res = {}
@@ -63,6 +64,8 @@ local execute = async.void(function(done)
   if not user then
     done(false)
   end
+  local job = require('hover.async.job').job
+
   ---@type string[]
   local output = job { 'gh', 'api', 'users/'..user, cwd = cwd }
   local results = process(output)

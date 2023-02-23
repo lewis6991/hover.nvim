@@ -1,5 +1,4 @@
 local async = require('hover.async')
-local job = require('hover.async.job').job
 
 local function enabled()
   local word = vim.fn.expand('<cword>')
@@ -35,6 +34,8 @@ end
 
 local execute = async.void(function(done)
   local word = vim.fn.expand('<cword>')
+
+  local job = require('hover.async.job').job
 
   ---@type string[]
   local output = job {

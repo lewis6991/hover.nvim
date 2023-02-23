@@ -1,7 +1,6 @@
 local api, fn = vim.api, vim.fn
 
 local async = require('hover.async')
-local job = require('hover.async.job').job
 
 local function enabled()
   return fn.expand('<cWORD>'):match('#%d+') ~= nil
@@ -43,6 +42,8 @@ local execute = async.void(function(done)
   local output
 
   local fields = 'author,title,number,body,state,createdAt,updatedAt,url'
+
+  local job = require('hover.async.job').job
 
   local repo, num = word:match('(%w+/%w+)#(%d+)')
   if repo then
