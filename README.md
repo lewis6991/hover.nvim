@@ -42,7 +42,12 @@ use {
                 -- require('hover.providers.dictionary')
             end,
             preview_opts = {
-                border = nil
+                border = nil,
+                -- focusable = true,
+                -- stylize_markdown = true,
+                -- wrap = false,
+                -- max_width = 80,
+                -- max_height = 10,
             },
             -- Whether the contents of a currently open hover window should be moved
             -- to a :h preview-window when pressing the hover keymap.
