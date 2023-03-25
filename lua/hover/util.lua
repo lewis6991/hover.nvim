@@ -325,6 +325,7 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
 
   vim.bo[floating_bufnr].modifiable = false
   vim.bo[floating_bufnr].bufhidden = 'wipe'
+  vim.bo[floating_bufnr].filetype = syntax
 
   vim.keymap.set('n', 'q', '<cmd>bdelete<cr>', { buffer = floating_bufnr, silent = true, nowait = true })
 
