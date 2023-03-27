@@ -12,21 +12,22 @@ require('hover').register {
   execute = function(done)
     local util = require('vim.lsp.util')
     local params = util.make_position_params()
-    vim.lsp.buf_request(0, 'textDocument/hover', params, function(_, result, _, _)
-      if not result or not result.contents then
-        done()
-        return
+
+    vim.lsp.buf_request_all(0, 'textDocument/hover', params, function(responses)
+      for _, response in pairs(responses) do
+        if response.result and response.result.contents then
+          local lines = util.convert_input_to_markdown_lines(response.result.contents)
+          lines = util.trim_empty_lines(lines)
+
+          if not vim.tbl_isempty(lines) then
+            done{lines=lines, filetype="markdown"}
+            return
+          end
+        end
       end
 
-      local lines = util.convert_input_to_markdown_lines(result.contents)
-      lines = util.trim_empty_lines(lines)
-
-      if vim.tbl_isempty(lines) then
-        done()
-        return
-      end
-
-      done{lines=lines, filetype="markdown"}
+      -- no results
+      done()
     end)
   end
 }
