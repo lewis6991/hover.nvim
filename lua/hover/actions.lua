@@ -36,12 +36,12 @@ local function add_title(winnr, active_provider_id)
     end
   end
 
-  vim.wo[winnr].winbar = table.concat(title, '')
   local config = api.nvim_win_get_config(winnr)
   api.nvim_win_set_config(winnr, {
     height = config.height + 1,
     width = math.max(config.width, winbar_length + 2) -- + 2 for border
   })
+  vim.wo[winnr].winbar = table.concat(title, '')
 end
 
 ---@param name string
