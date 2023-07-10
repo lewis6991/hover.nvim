@@ -4,7 +4,7 @@ local async = require('hover.async')
 
 local function enabled()
   return vim.tbl_contains({
-    'sh', 'zsh', 'tcl', 'make',
+    'c', 'sh', 'zsh', 'tcl', 'make',
   }, vim.bo.filetype)
 end
 
