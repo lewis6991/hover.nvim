@@ -45,7 +45,7 @@ local execute = async.void(function(done)
 
   local job = require('hover.async.job').job
 
-  local repo, num = word:match('(%w+/%w+)#(%d+)')
+  local repo, num = word:match('([%w-]+/[%w%.-_]+)#(%d+)')
   if repo then
     ---@type string[]
     output = job {
