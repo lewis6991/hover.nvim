@@ -18,11 +18,18 @@ local function first_to_upper(str)
   return str:gsub("^%l", string.upper)
 end
 
-local function process(result)
+---@param result string|nil
+---@param stderr string|nil
+local function process(result, stderr)
+  if result == nil then
+    vim.notify(vim.trim(stderr or "(Unknown error)"), vim.log.levels.ERROR, { title = "hover.nvim (gh_user)" })
+    return
+  end
+
   local ok, json = pcall(vim.json.decode, result)
   if not ok then
     async.scheduler()
-    vim.notify("Failed to parse gh user result", vim.log.levels.ERROR)
+    vim.notify("Failed to parse gh user result" .. json, vim.log.levels.ERROR)
     return
   end
 
@@ -54,6 +61,11 @@ local function process(result)
     end
   end
 
+  -- 404 (user does not exist)
+  if #res == 0 and json.message and json.message ~= vim.NIL then
+    res[#res+1] = 'ERROR: ' .. json.message
+  end
+
   return res
 end
 
@@ -66,9 +78,11 @@ local execute = async.void(function(done)
   end
   local job = require('hover.async.job').job
 
-  ---@type string[]
-  local output = job { 'gh', 'api', 'users/'..user, cwd = cwd }
-  local results = process(output)
+  ---@type string
+  local output, stderr
+  output, stderr = job { 'gh', 'api', 'users/'..user, cwd = cwd }
+
+  local results = process(output, stderr)
   done(results and {lines=results, filetype="markdown"})
 end)
 
