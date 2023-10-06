@@ -151,7 +151,7 @@ local function run_provider(provider)
   end
 
   local result = provider.execute_a()
-  if result then
+  if result and #(result.lines or {}) > 0 then
     async.scheduler()
     show_hover(provider.id, config, result, opts)
     return true

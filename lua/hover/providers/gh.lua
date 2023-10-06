@@ -6,11 +6,18 @@ local function enabled()
   return fn.expand('<cWORD>'):match('#%d+') ~= nil
 end
 
-local function process(result)
+---@param result string|nil
+---@param stderr string|nil
+local function process(result, stderr)
+  if result == nil then
+    vim.notify(vim.trim(stderr or "(Unknown error)"), vim.log.levels.ERROR, { title = "hover.nvim (gh)" })
+    return
+  end
+
   local ok, json = pcall(vim.json.decode, result)
   if not ok then
     async.scheduler()
-    vim.notify("Failed to parse gh result", vim.log.levels.ERROR)
+    vim.notify("Failed to parse gh result: " .. json, vim.log.levels.ERROR)
     return
   end
 
@@ -39,7 +46,8 @@ local execute = async.void(function(done)
 
   local word = fn.expand('<cWORD>')
 
-  local output
+  local output ---@type string[]|nil
+  local stderr ---@type string[]|nil
 
   local fields = 'author,title,number,body,state,createdAt,updatedAt,url'
 
@@ -47,16 +55,14 @@ local execute = async.void(function(done)
 
   local repo, num = word:match('([%w-]+/[%w%.-_]+)#(%d+)')
   if repo then
-    ---@type string[]
-    output = job {
+    output, stderr = job {
       'gh', 'issue', 'view', '--json', fields, num, '-R', repo,
       cwd = cwd
     }
   else
     num = word:match('#(%d+)')
     if num then
-      ---@type string[]
-      output = job {
+      output, stderr = job {
         'gh', 'issue', 'view', '--json', fields, id,
         cwd = cwd
       }
@@ -66,7 +72,7 @@ local execute = async.void(function(done)
     end
   end
 
-  local results = process(output)
+  local results = process(output, stderr)
   done(results and {lines=results, filetype="markdown"})
 end)
 
