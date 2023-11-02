@@ -1,4 +1,4 @@
-local ISSUE_PATTERN = '%u%u+-%d+'
+local ISSUE_PATTERN = '%u[%d%u]+-%d+'
 
 local function enabled()
     -- Match 2 or more uppercase letters followed by a '-' and 1 or more digits.
