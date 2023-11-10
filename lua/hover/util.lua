@@ -106,7 +106,7 @@ local function make_floating_popup_options(width, height, opts)
     col       = col + (opts.offset_x or 0),
     height    = height,
     focusable = opts.focusable,
-    relative  = 'cursor',
+    relative  = opts.relative or 'cursor',
     row       = row + (opts.offset_y or 0),
     style     = 'minimal',
     width     = width,
@@ -279,10 +279,11 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
 
   -- check if another floating preview already exists for this buffer
   -- and close it if needed
-  local existing_float = npcall(api.nvim_buf_get_var, cbuf, 'lsp_floating_preview')
-  if existing_float and api.nvim_win_is_valid(existing_float) then
-    api.nvim_win_close(existing_float, true)
+  local cur_hover = npcall(api.nvim_buf_get_var, cbuf, 'hover_preview')
+  if cur_hover and api.nvim_win_is_valid(cur_hover) then
+    api.nvim_win_close(cur_hover, true)
   end
+  vim.b[cbuf].hover_preview = nil
 
   local floating_bufnr = bufnr or api.nvim_create_buf(false, true)
   local do_stylize = syntax == 'markdown' and opts.stylize_markdown
@@ -312,31 +313,33 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   local width, height = make_floating_popup_size(contents, opts)
 
   local float_option = make_floating_popup_options(width, height, opts)
-  local floating_winnr = api.nvim_open_win(floating_bufnr, false, float_option)
+  print(vim.inspect(float_option))
+  local hover_winid = api.nvim_open_win(floating_bufnr, false, float_option)
   if do_stylize then
-    vim.wo[floating_winnr].conceallevel = 2
-    vim.wo[floating_winnr].concealcursor = 'n'
+    vim.wo[hover_winid].conceallevel = 2
+    vim.wo[hover_winid].concealcursor = 'n'
   end
 
   -- disable folding
-  vim.wo[floating_winnr].foldenable = false
+  vim.wo[hover_winid].foldenable = false
   -- soft wrapping
-  vim.wo[floating_winnr].wrap = opts.wrap
+  vim.wo[hover_winid].wrap = opts.wrap
 
   vim.bo[floating_bufnr].modifiable = false
   vim.bo[floating_bufnr].bufhidden = 'wipe'
 
   vim.keymap.set('n', 'q', '<cmd>bdelete<cr>', { buffer = floating_bufnr, silent = true, nowait = true })
 
-  close_preview_autocmd(floating_winnr, { floating_bufnr, cbuf })
+  close_preview_autocmd(hover_winid, { floating_bufnr, cbuf })
 
   -- save focus_id
   if opts.focus_id then
-    vim.w[floating_winnr][opts.focus_id] = cbuf
+    vim.w[hover_winid][opts.focus_id] = cbuf
   end
-  vim.w[floating_winnr].lsp_floating_preview = floating_winnr
+  vim.w[hover_winid].hover_preview = hover_winid
+  vim.b[cbuf].hover_preview = hover_winid
 
-  return floating_bufnr, floating_winnr
+  return hover_winid
 end
 
 return M

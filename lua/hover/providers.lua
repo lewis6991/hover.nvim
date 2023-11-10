@@ -2,20 +2,29 @@ local async = require('hover.async')
 
 local M  = {}
 
----@class Provider
----@field priority integer
----@field id integer
----@field name string
----@field execute fun(done: fun(result:any))
----@field execute_a fun(): any
----@field enabled fun(): boolean
+--- @class Hover.Options
+--- @field bufnr integer
+--- @field pos {[1]: integer, [2]: integer}
+--- @field relative? string
+--- @field providers? string[]
 
----@type Provider[]
+--- @class Hover.RegisterProvider
+--- @field priority integer
+--- @field name string
+--- @field execute fun(opts?: Hover.Options, done: fun(result: any))
+--- @field enabled fun(): boolean
+
+--- @class Hover.Provider : Hover.RegisterProvider
+--- @field id integer
+--- @field execute_a fun(opts?: Hover.Options): any
+
+--- @type Hover.Provider[]
 local providers = {}
 M.providers = providers
 
 local id_cnt = 0
 
+--- @param provider Hover.RegisterProvider
 function M.register(provider)
   if not provider.execute or type(provider.execute) ~= 'function' then
     vim.notify(string.format('error: hover provider %s does not provide an execute function',
@@ -23,9 +32,11 @@ function M.register(provider)
     return
   end
 
-  provider.execute_a = async.wrap(provider.execute, 1)
+  --- @cast provider Hover.Provider
+
+  provider.execute_a = async.wrap(provider.execute, 2)
   provider.id = id_cnt
-  id_cnt  = id_cnt + 1
+  id_cnt = id_cnt + 1
 
   if provider.priority then
     for i, p in ipairs(providers) do

@@ -3,10 +3,12 @@ local M = {}
 local exports = {
   register     = 'hover.providers',
   hover        = 'hover.actions',
-  hover_select = 'hover.actions'
+  close        = 'hover.actions',
+  hover_select = 'hover.actions',
+  hover_mouse  = 'hover.actions'
 }
 
----@param user_config HoverConfig
+---@param user_config Hover.Config
 function M.setup(user_config)
   require('hover.config').set(user_config)
 end

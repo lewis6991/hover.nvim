@@ -39,7 +39,7 @@ local function process(result, stderr)
   return lines
 end
 
-local execute = async.void(function(done)
+local execute = async.void(function(opts, done)
   local bufnr = api.nvim_get_current_buf()
   local cwd = fn.fnamemodify(api.nvim_buf_get_name(bufnr), ':p:h')
   local id = fn.expand('<cword>')

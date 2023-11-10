@@ -42,17 +42,26 @@ use {
                 -- require('hover.providers.dictionary')
             end,
             preview_opts = {
-                border = nil
+                border = 'single'
             },
             -- Whether the contents of a currently open hover window should be moved
             -- to a :h preview-window when pressing the hover keymap.
             preview_window = false,
-            title = true
+            title = true,
+            mouse_providers = {
+                'LSP'
+            },
+            mouse_delay = 1000
         }
 
         -- Setup keymaps
         vim.keymap.set("n", "K", require("hover").hover, {desc = "hover.nvim"})
         vim.keymap.set("n", "gK", require("hover").hover_select, {desc = "hover.nvim (select)"})
+
+        -- Mouse support
+        vim.keymap.set('n', '<MouseMove>', require('hover').hover_mouse, { desc = "hover.nvim (mouse)" })
+        vim.o.mousemoveevent = true
+end)
     end
 }
 ```
@@ -115,6 +124,10 @@ Call `require('hover').register(<provider>)` with a table containing the followi
 - `name`: string, name of the hover provider
 - `enabled`: function, whether the hover is active for the current context
 - `execute`: function, executes the hover. Has the following arguments:
+    - `opts`: Additional options:
+        - `bufnr` (integer)
+        - `pos` ({[1]: integer, [2]: integer})
+        - `relative` (string)
     - `done`: callback. First argument should be passed:
         - `nil`/`false` if the hover failed to execute. This will allow other lower priority hovers to run.
         - A table with the following fields:
@@ -133,7 +146,7 @@ require('hover').register {
    enabled = function()
      return true
    end,
-   execute = function(done)
+   execute = function(opts, done)
      done{lines={'TEST'}, filetype="markdown"}
    end
 }

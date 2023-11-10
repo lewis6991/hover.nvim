@@ -32,7 +32,7 @@ local function process(result)
   return lines
 end
 
-local execute = async.void(function(done)
+local execute = async.void(function(opts, done)
   local word = vim.fn.expand('<cword>')
 
   local job = require('hover.async.job').job

@@ -8,7 +8,7 @@ local function enabled()
   }, vim.bo.filetype)
 end
 
-local execute = async.void(function(done)
+local execute = async.void(function(opts, done)
   local word = vim.fn.expand('<cword>')
   local section = vim.bo.filetype == 'tcl' and 'n' or '1'
   local uri = string.format('man://%s(%s)', word, section)

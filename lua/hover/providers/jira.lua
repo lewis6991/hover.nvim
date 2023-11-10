@@ -5,7 +5,7 @@ local function enabled()
     return vim.fn.expand('<cWORD>'):match(ISSUE_PATTERN) ~= nil
 end
 
-local function execute(done)
+local function execute(opts, done)
     local query = vim.fn.expand('<cWORD>'):match(ISSUE_PATTERN)
 
     local job = require('hover.async.job').job

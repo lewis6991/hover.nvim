@@ -12,10 +12,14 @@ local M = {}
 
 local initialised = false
 
+--- @param provider Hover.Provider
+--- @return boolean
 local function is_enabled(provider)
   return provider.enabled == nil or provider.enabled()
 end
 
+--- @param winnr integer
+--- @param active_provider_id integer
 local function add_title(winnr, active_provider_id)
   if not has_winbar then
     vim.notify_once('hover.nvim: `config.title` requires neovim >= 0.8.0',
@@ -55,6 +59,7 @@ local function find_window_by_var(name, value)
   end
 end
 
+--- @return boolean
 local function focus_or_close_floating_window()
   local bufnr = api.nvim_get_current_buf()
   local winnr = api.nvim_get_current_win()
@@ -74,6 +79,7 @@ local function focus_or_close_floating_window()
   return false
 end
 
+--- @return integer?
 local function get_preview_window()
   for _, win in ipairs(api.nvim_tabpage_list_wins(api.nvim_get_current_tabpage())) do
     if vim.wo[win].previewwindow then
@@ -82,15 +88,17 @@ local function get_preview_window()
   end
 end
 
+--- @return integer
 local function create_preview_window()
   vim.cmd.new()
   vim.cmd.stopinsert()
   local pwin = api.nvim_get_current_win()
   vim.wo[pwin].previewwindow = true
-  api.nvim_win_set_height(pwin, api.nvim_get_option('previewheight'))
+  api.nvim_win_set_height(pwin, vim.o.previewheight)
   return pwin
 end
 
+--- @return boolean
 local function send_to_preview_window()
   local bufnr = api.nvim_get_current_buf()
   local winid = api.nvim_get_current_win()
@@ -120,29 +128,39 @@ local function send_to_preview_window()
   return true
 end
 
+--- @return boolean
 local function do_hover()
   if get_config().preview_window then
     return send_to_preview_window()
-  else
-    return focus_or_close_floating_window()
   end
+  return focus_or_close_floating_window()
 end
 
+--- @param provider_id integer
+--- @param config Hover.Config
+--- @param result any
+--- @param opts Hover.Options
 local function show_hover(provider_id, config, result, opts)
   local util = require('hover.util')
-  local _, winnr = util.open_floating_preview(result.lines, result.bufnr, result.filetype, opts)
+  local winid = util.open_floating_preview(result.lines, result.bufnr, result.filetype, opts)
 
   if config.title then
-    add_title(winnr, provider_id)
+    add_title(winid, provider_id)
   end
 end
 
----@async
----@param provider Provider
-local function run_provider(provider)
+--- @param provider Hover.Provider
+--- @param popts Hover.Options
+local function run_provider(provider, popts)
   local config = get_config()
   local opts = vim.deepcopy(config.preview_opts)
+
+  popts = popts or {}
+  popts.bufnr = popts.bufnr or api.nvim_get_current_buf()
+  popts.pos = popts.pos or api.nvim_win_get_cursor(0)
+
   opts.focus_id = 'hover'
+  opts.relative = popts.relative
 
   if opts.focusable ~= false and opts.focus ~= false then
     if do_hover() then
@@ -150,8 +168,9 @@ local function run_provider(provider)
     end
   end
 
-  local result = provider.execute_a()
-  if result and #(result.lines or {}) > 0 then
+  local result = provider.execute_a(popts)
+
+  if result then
     async.scheduler()
     show_hover(provider.id, config, result, opts)
     return true
@@ -172,19 +191,30 @@ local function init()
   end
 end
 
----@async
-M.hover = async.void(function()
+--- @param buf integer
+function M.close(buf)
+  local cur_hover = vim.b[buf].hover_preview
+  if cur_hover and api.nvim_win_is_valid(cur_hover) then
+    api.nvim_win_close(cur_hover, true)
+  end
+  vim.b[buf].hover_preview = nil
+end
+
+--- @param opts Hover.Options
+M.hover = async.void(function(opts)
   init()
 
   for _, provider in ipairs(providers) do
-    async.scheduler()
-    if is_enabled(provider) and run_provider(provider) then
-      return
+    if not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
+      async.scheduler()
+      if is_enabled(provider) and run_provider(provider, opts) then
+        return
+      end
     end
   end
 end)
 
-M.hover_select = function()
+function M.hover_select(opts)
   init()
 
   vim.ui.select(
@@ -197,10 +227,31 @@ M.hover_select = function()
     },
     function (provider)
       if provider then
-        async.void(run_provider)(provider)
+        async.void(run_provider)(provider, opts)
       end
     end
   )
+end
+
+local timer --- @type uv.uv_timer_t
+
+function M.hover_mouse()
+  timer = timer or assert(vim.uv.new_timer())
+
+  local buf = api.nvim_get_current_buf()
+
+  M.close(buf)
+
+  local config = get_config()
+
+  timer:start(config.mouse_delay, 0, vim.schedule_wrap(function()
+    local pos = vim.fn.getmousepos()
+    M.hover {
+      providers = config.mouse_providers,
+      relative = 'mouse',
+      pos = { pos.line - 1, pos.column }
+    }
+  end))
 end
 
 return M
