@@ -205,7 +205,7 @@ M.hover = async.void(function(opts)
   init()
 
   for _, provider in ipairs(providers) do
-    if not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
+    if not opts or not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
       async.scheduler()
       if is_enabled(provider) and run_provider(provider, opts) then
         return
