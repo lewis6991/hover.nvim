@@ -313,7 +313,6 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   local width, height = make_floating_popup_size(contents, opts)
 
   local float_option = make_floating_popup_options(width, height, opts)
-  print(vim.inspect(float_option))
   local hover_winid = api.nvim_open_win(floating_bufnr, false, float_option)
   if do_stylize then
     vim.wo[hover_winid].conceallevel = 2

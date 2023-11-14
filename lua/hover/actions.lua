@@ -249,7 +249,7 @@ function M.hover_mouse()
     M.hover {
       providers = config.mouse_providers,
       relative = 'mouse',
-      pos = { pos.line - 1, pos.column }
+      pos = { pos.line, pos.column }
     }
   end))
 end
