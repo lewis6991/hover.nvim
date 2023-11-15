@@ -7,7 +7,7 @@ local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
 --- @param encoding string
 --- @return integer
 local function str_utfindex(line, index, encoding)
-  if not line then
+  if not line or #line < index then
     return index
   end
 
