@@ -138,10 +138,15 @@ local function do_hover()
   return focus_or_close_floating_window()
 end
 
+--- @class Hover.Result
+--- @field lines? string[]
+--- @field bufnr? integer
+--- @field filetype? string
+
 --- @param bufnr integer
 --- @param provider_id integer
 --- @param config Hover.Config
---- @param result any
+--- @param result Hover.Result
 --- @param opts Hover.Options
 local function show_hover(bufnr, provider_id, config, result, opts)
   local util = require('hover.util')
@@ -158,18 +163,17 @@ local function run_provider(provider, popts)
   local config = get_config()
   local opts = vim.deepcopy(config.preview_opts)
 
-  popts = popts or {}
-  popts.bufnr = popts.bufnr or api.nvim_get_current_buf()
-  popts.pos = popts.pos or api.nvim_win_get_cursor(0)
-
-  opts.focus_id = 'hover'
-  opts.relative = popts.relative
-
   if opts.focusable ~= false and opts.focus ~= false then
     if do_hover() then
       return true
     end
   end
+
+  popts = popts or {}
+  popts.bufnr = popts.bufnr or api.nvim_get_current_buf()
+  popts.pos = popts.pos or api.nvim_win_get_cursor(0)
+
+  opts.relative = popts.relative
 
   local result = provider.execute_a(popts)
 
