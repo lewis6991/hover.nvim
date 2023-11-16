@@ -32,13 +32,15 @@ end
 local function buf_request_all(bufnr, method, params_fn, handler)
   local results = {}
   local exp_reponses = 0
+  local reponses = 0
 
   for _, client in pairs(get_clients({ bufnr = bufnr })) do
     if client.supports_method(method, { bufnr = bufnr }) then
       exp_reponses = exp_reponses + 1
       client.request(method, params_fn(client), function(_, result)
+        reponses = reponses + 1
         results[client] = result
-        if vim.tbl_count(results) >= exp_reponses then
+        if reponses >= exp_reponses then
           handler(results)
         end
       end, bufnr)
