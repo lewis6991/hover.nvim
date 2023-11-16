@@ -2,15 +2,17 @@ local api = vim.api
 
 local async = require('hover.async')
 
-local function enabled()
+--- @param bufnr integer
+--- @return boolean
+local function enabled(bufnr)
   return vim.tbl_contains({
     'c', 'sh', 'zsh', 'tcl', 'make',
-  }, vim.bo.filetype)
+  }, vim.bo[bufnr].filetype)
 end
 
 local execute = async.void(function(opts, done)
   local word = vim.fn.expand('<cword>')
-  local section = vim.bo.filetype == 'tcl' and 'n' or '1'
+  local section = vim.bo[opts.bufnr].filetype == 'tcl' and 'n' or '1'
   local uri = string.format('man://%s(%s)', word, section)
 
   local bufnr = api.nvim_create_buf(false, true)

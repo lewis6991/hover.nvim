@@ -53,8 +53,14 @@ end
 local function create_params(bufnr, row, col)
   return function(client)
       local offset_encoding = client.offset_encoding
-      local line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, true)[1]
-      local ccol = str_utfindex(line, col, offset_encoding)
+      local ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, row, row + 1, true)
+
+      if not ok then
+        print(debug.traceback(string.format('ERROR: row %d is out of range: %s', row, lines)))
+      end
+
+      local ccol = lines and str_utfindex(lines[1], col, offset_encoding) or col
+
       return {
         textDocument = { uri = vim.uri_from_bufnr(bufnr) },
         position = {
@@ -68,9 +74,9 @@ end
 require('hover').register {
   name = 'LSP',
   priority = 1000,
-  enabled = function()
+  enabled = function(bufnr)
     for _, client in pairs(get_clients()) do
-      if client and client.supports_method('textDocument/hover') then
+      if client.supports_method('textDocument/hover', { bufnr = bufnr }) then
         return true
       end
     end

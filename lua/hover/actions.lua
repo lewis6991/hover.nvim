@@ -13,14 +13,16 @@ local M = {}
 local initialised = false
 
 --- @param provider Hover.Provider
+--- @param bufnr integer
 --- @return boolean
-local function is_enabled(provider)
-  return provider.enabled == nil or provider.enabled()
+local function is_enabled(provider, bufnr)
+  return provider.enabled == nil or provider.enabled(bufnr)
 end
 
+--- @param bufnr integer
 --- @param winnr integer
 --- @param active_provider_id integer
-local function add_title(winnr, active_provider_id)
+local function add_title(bufnr, winnr, active_provider_id)
   if not has_winbar then
     vim.notify_once('hover.nvim: `config.title` requires neovim >= 0.8.0',
                     vim.log.levels.WARN)
@@ -32,7 +34,7 @@ local function add_title(winnr, active_provider_id)
   local winbar_length = 0
 
   for _, p in ipairs(providers) do
-    if is_enabled(p) then
+    if is_enabled(p, bufnr) then
       local hl = p.id == active_provider_id and 'TabLineSel' or 'TabLineFill'
       title[#title+1] = string.format('%%#%s# %s ', hl, p.name)
       title[#title+1] = '%#Normal# '
@@ -136,16 +138,17 @@ local function do_hover()
   return focus_or_close_floating_window()
 end
 
+--- @param bufnr integer
 --- @param provider_id integer
 --- @param config Hover.Config
 --- @param result any
 --- @param opts Hover.Options
-local function show_hover(provider_id, config, result, opts)
+local function show_hover(bufnr, provider_id, config, result, opts)
   local util = require('hover.util')
   local winid = util.open_floating_preview(result.lines, result.bufnr, result.filetype, opts)
 
   if config.title then
-    add_title(winid, provider_id)
+    add_title(bufnr, winid, provider_id)
   end
 end
 
@@ -172,7 +175,7 @@ local function run_provider(provider, popts)
 
   if result then
     async.scheduler()
-    show_hover(provider.id, config, result, opts)
+    show_hover(popts.bufnr, provider.id, config, result, opts)
     return true
   end
 
@@ -191,23 +194,25 @@ local function init()
   end
 end
 
---- @param buf integer
-function M.close(buf)
-  local cur_hover = vim.b[buf].hover_preview
+--- @param bufnr integer
+function M.close(bufnr)
+  local cur_hover = vim.b[bufnr].hover_preview
   if cur_hover and api.nvim_win_is_valid(cur_hover) then
     api.nvim_win_close(cur_hover, true)
   end
-  vim.b[buf].hover_preview = nil
+  vim.b[bufnr].hover_preview = nil
 end
 
 --- @param opts Hover.Options
 M.hover = async.void(function(opts)
   init()
 
+  local bufnr = opts and opts.bufnr or api.nvim_get_current_buf()
+
   for _, provider in ipairs(providers) do
     if not opts or not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
       async.scheduler()
-      if is_enabled(provider) and run_provider(provider, opts) then
+      if is_enabled(provider, bufnr) and run_provider(provider, opts) then
         return
       end
     end

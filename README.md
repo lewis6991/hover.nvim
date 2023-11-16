@@ -143,11 +143,22 @@ Call `require('hover').register(<provider>)` with a table containing the followi
 -- Simple
 require('hover').register {
    name = 'Simple',
-   enabled = function()
+   --- @param bufnr integer
+   enabled = function(bufnr)
      return true
    end,
+   --- @param opts Hover.Options
+   --- @param done fun(result: any)
    execute = function(opts, done)
      done{lines={'TEST'}, filetype="markdown"}
    end
 }
+```
+
+```lua
+--- @class Hover.Options
+--- @field bufnr integer
+--- @field pos {[1]: integer, [2]: integer}
+--- @field relative? string
+--- @field providers? string[]
 ```
