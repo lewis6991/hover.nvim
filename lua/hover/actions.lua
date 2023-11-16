@@ -226,19 +226,23 @@ M.hover = async.void(function(opts)
   local use_provider = current_provider == nil
 
   for _, provider in ipairs(providers) do
-    async.scheduler()
-    if use_provider and is_enabled(provider, bufnr) and run_provider(provider, opts) then
-      return
-    end
-    if provider.id == current_provider then
-      use_provider = true
+    if not opts or not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
+      async.scheduler()
+      if use_provider and is_enabled(provider, bufnr) and run_provider(provider, opts) then
+        return
+      end
+      if provider.id == current_provider then
+        use_provider = true
+      end
     end
   end
 
   for _, provider in ipairs(providers) do
-    async.scheduler()
-    if is_enabled(provider, bufnr) and run_provider(provider, opts) then
-      return
+    if not opts or not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
+      async.scheduler()
+      if is_enabled(provider, bufnr) and run_provider(provider, opts) then
+        return
+      end
     end
   end
 end)
