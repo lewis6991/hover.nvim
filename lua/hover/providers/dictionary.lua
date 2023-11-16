@@ -32,21 +32,24 @@ local function process(result)
   return lines
 end
 
-local execute = async.void(function(opts, done)
+local cache = {} --- @type table<string,string[]>
+
+local execute = async.void(function(_opts, done)
   local word = vim.fn.expand('<cword>')
 
-  local job = require('hover.async.job').job
+  if not cache[word] then
+    local job = require('hover.async.job').job
 
-  ---@type string[]
-  local output = job {
-    'curl', 'https://api.dictionaryapi.dev/api/v2/entries/en/'..word
-  }
+    ---@type string[]
+    local output = job {
+      'curl', 'https://api.dictionaryapi.dev/api/v2/entries/en/'..word
+    }
 
-  local results = process(output)
-  if not results then
-    results = {'no definition for '..word}
+    local results = process(output) or {'no definition for '..word}
+    cache[word] = results
   end
-  done(results and {lines=results, filetype="markdown"})
+
+  done({lines=cache[word], filetype="markdown"})
 end)
 
 require('hover').register {
