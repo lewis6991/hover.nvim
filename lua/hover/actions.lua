@@ -61,24 +61,24 @@ local function find_window_by_var(name, value)
   end
 end
 
---- @return boolean
+--- @return integer? winid
 local function focus_or_close_floating_window()
   local bufnr = api.nvim_get_current_buf()
-  local winnr = api.nvim_get_current_win()
+  local winid = api.nvim_get_current_win()
 
   -- Go back to previous window if we are in a focusable one
-  if npcall(api.nvim_win_get_var, winnr, 'hover') then
-    api.nvim_command("wincmd p")
-    return true
+  if vim.w[winid].hover then
+    vim.cmd.wincmd('p')
+    return winid
   end
+
   local win = find_window_by_var('hover', bufnr)
   if win and api.nvim_win_is_valid(win) and vim.fn.pumvisible() == 0 then
     -- focus and return the existing buf, win
     api.nvim_set_current_win(win)
-    api.nvim_command("stopinsert")
-    return true
+    vim.cmd.stopinsert()
+    return win
   end
-  return false
 end
 
 --- @return integer?
@@ -100,20 +100,20 @@ local function create_preview_window()
   return pwin
 end
 
---- @return boolean
+--- @return integer? winid
 local function send_to_preview_window()
   local bufnr = api.nvim_get_current_buf()
   local winid = api.nvim_get_current_win()
   local hover_win = find_window_by_var('hover', bufnr)
   if not hover_win or not api.nvim_win_is_valid(hover_win) then
-    return false
+    return
   end
   local hover_bufnr = api.nvim_win_get_buf(hover_win)
   if not hover_bufnr or not api.nvim_buf_is_valid(hover_bufnr) then
-    return false
+    return
   end
   if vim.fn.pumvisible() ~= 0 then
-    return false
+    return
   end
   local pwin = get_preview_window() or create_preview_window()
   local pwin_prev_buf = api.nvim_win_get_buf(pwin)
@@ -127,10 +127,10 @@ local function send_to_preview_window()
   vim.wo[pwin].winbar = vim.wo[hover_win].winbar
   api.nvim_win_close(hover_win, true)
   api.nvim_set_current_win(winid)
-  return true
+  return pwin
 end
 
---- @return boolean
+--- @return integer? winid
 local function do_hover()
   if get_config().preview_window then
     return send_to_preview_window()
@@ -148,6 +148,7 @@ end
 --- @param config Hover.Config
 --- @param result Hover.Result
 --- @param opts Hover.Options
+--- @return integer hover_winid
 local function show_hover(bufnr, provider_id, config, result, opts)
   local util = require('hover.util')
   local winid = util.open_floating_preview(result.lines, result.bufnr, result.filetype, opts)
@@ -155,17 +156,21 @@ local function show_hover(bufnr, provider_id, config, result, opts)
   if config.title then
     add_title(bufnr, winid, provider_id)
   end
+  vim.w[winid].hover_provider = provider_id
+
+  return winid
 end
 
 --- @param provider Hover.Provider
 --- @param popts Hover.Options
+--- @return boolean
 local function run_provider(provider, popts)
   local config = get_config()
   local opts = vim.deepcopy(config.preview_opts)
 
   if opts.focusable ~= false and opts.focus ~= false then
     if do_hover() then
-      return true
+      return false
     end
   end
 
@@ -213,12 +218,27 @@ M.hover = async.void(function(opts)
 
   local bufnr = opts and opts.bufnr or api.nvim_get_current_buf()
 
+  local hover_win = vim.b[bufnr].hover_preview
+  local current_provider = hover_win and vim.w[hover_win].hover_provider or nil
+
+  --- If hover is open then set use_provider to false until we cycle to the
+  --- next available provider.
+  local use_provider = current_provider == nil
+
   for _, provider in ipairs(providers) do
-    if not opts or not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
-      async.scheduler()
-      if is_enabled(provider, bufnr) and run_provider(provider, opts) then
-        return
-      end
+    async.scheduler()
+    if use_provider and is_enabled(provider, bufnr) and run_provider(provider, opts) then
+      return
+    end
+    if provider.id == current_provider then
+      use_provider = true
+    end
+  end
+
+  for _, provider in ipairs(providers) do
+    async.scheduler()
+    if is_enabled(provider, bufnr) and run_provider(provider, opts) then
+      return
     end
   end
 end)

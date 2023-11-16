@@ -14,27 +14,33 @@ local function close_preview_window(winnr, bufnrs)
   end)
 end
 
-local function close_preview_autocmd(winnr, bufnrs)
-  local augroup = api.nvim_create_augroup('preview_window_' .. winnr, {})
+--- @param winid integer
+--- @param hover_bufnr integer
+--- @param bufnr integer
+local function close_preview_autocmd(winid, hover_bufnr, bufnr)
+  local augroup = api.nvim_create_augroup('preview_window_' .. winid, {})
 
   -- close the preview window when entered a buffer that is not
   -- the floating window buffer or the buffer that spawned it
   api.nvim_create_autocmd('BufEnter', {
     group = augroup,
     callback = function()
-      close_preview_window(winnr, bufnrs)
+      close_preview_window(winid, {hover_bufnr, bufnr})
     end,
   })
 
   api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI', 'InsertCharPre' }, {
     group = augroup,
-    buffer = bufnrs[2],
+    buffer = bufnr,
     callback = function()
-      close_preview_window(winnr)
+      vim.b[bufnr].hover_preview = nil
+      close_preview_window(winid)
     end,
   })
 end
 
+--- @param lines string[]
+--- @return string[]
 local function trim_empty_lines(lines)
   local start = 1
   for i = 1, #lines do
@@ -65,6 +71,10 @@ local default_border = {
   { ' ', 'NormalFloat' },
 }
 
+--- @param width integer
+--- @param height integer
+--- @param opts vim.api.keyset.float_config
+--- @return vim.api.keyset.float_config
 local function make_floating_popup_options(width, height, opts)
   opts = opts or {}
 
@@ -84,7 +94,7 @@ local function make_floating_popup_options(width, height, opts)
     row = 0
   end
 
-  if vim.fn.wincol() + width + (opts.offset_x or 0) <= vim.o.columns then
+  if vim.fn.wincol() + width <= vim.o.columns then
     anchor = anchor .. 'W'
     col = 0
   else
@@ -94,11 +104,11 @@ local function make_floating_popup_options(width, height, opts)
 
   return {
     anchor    = anchor,
-    col       = col + (opts.offset_x or 0),
+    col       = col,
     height    = height,
     focusable = opts.focusable,
     relative  = opts.relative or 'cursor',
-    row       = row + (opts.offset_y or 0),
+    row       = row,
     style     = 'minimal',
     width     = width,
     border    = opts.border or default_border,
@@ -250,7 +260,7 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   local do_stylize = syntax == 'markdown' and opts.stylize_markdown
 
   -- Clean up input: trim empty lines from the end, pad
-  contents = trim_empty_lines(contents)
+  contents = trim_empty_lines(assert(contents))
 
   if do_stylize then
     -- applies the syntax and sets the lines to the buffer
@@ -295,7 +305,7 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
     nowait = true
   })
 
-  close_preview_autocmd(hover_winid, { floating_bufnr, cbuf })
+  close_preview_autocmd(hover_winid, floating_bufnr, cbuf)
 
   vim.w[hover_winid].hover_preview = hover_winid
   vim.b[cbuf].hover_preview = hover_winid
