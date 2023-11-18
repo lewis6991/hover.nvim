@@ -250,8 +250,10 @@ end)
 function M.hover_select(opts)
   init()
 
+  local bufnr = opts and opts.bufnr or api.nvim_get_current_buf()
+
   vim.ui.select(
-    vim.tbl_filter(is_enabled, providers),
+    vim.tbl_filter(function(provider) return is_enabled(provider, bufnr) end, providers),
     {
       prompt = 'Select hover:',
       format_item = function(provider)
