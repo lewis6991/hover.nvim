@@ -219,7 +219,10 @@ M.hover = async.void(function(opts)
   local bufnr = opts and opts.bufnr or api.nvim_get_current_buf()
 
   local hover_win = vim.b[bufnr].hover_preview
-  local current_provider = hover_win and vim.w[hover_win].hover_provider or nil
+  local current_provider =
+    hover_win and
+    api.nvim_win_is_valid(hover_win) and
+    vim.w[hover_win].hover_provider or nil
 
   --- If hover is open then set use_provider to false until we cycle to the
   --- next available provider.
