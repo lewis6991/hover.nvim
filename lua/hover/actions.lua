@@ -314,18 +314,22 @@ local timer --- @type uv.uv_timer_t
 function M.hover_mouse()
   timer = timer or assert(vim.uv.new_timer())
 
-  local buf = api.nvim_get_current_buf()
-
-  M.close(buf)
-
   local config = get_config()
 
   timer:start(config.mouse_delay, 0, vim.schedule_wrap(function()
     local pos = vim.fn.getmousepos()
+    if pos.winid == 0 then return end
+
+    local buf = vim.fn.winbufnr(pos.winid)
+    if buf == -1 then return end
+
+    M.close(buf)
+
     M.hover {
       providers = config.mouse_providers,
       relative = 'mouse',
-      pos = { pos.line, pos.column }
+      pos = { pos.line, pos.column },
+      bufnr = buf
     }
   end))
 end
