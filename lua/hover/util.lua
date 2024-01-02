@@ -183,7 +183,7 @@ local function make_floating_popup_size(contents, opts)
   local line_widths = {}
 
   if not width then
-    width = 0
+    width = 1 -- not zero, avoid modulo by zero if content is empty
     for i, line in ipairs(contents) do
       line_widths[i] = vim.fn.strdisplaywidth(line)
       width = math.max(line_widths[i], width)
