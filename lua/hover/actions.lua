@@ -250,6 +250,44 @@ M.hover = async.void(function(opts)
   end
 end)
 
+--- @param direction string, 'previous' | 'next'
+--- @param opts Hover.Options
+function M.hover_switch(direction, opts)
+  local bufnr = api.nvim_get_current_buf()
+  local provider_count = 0
+  local provider_idx = 0
+  local active_providers = {}
+  local hover_win = vim.b[bufnr].hover_preview
+  local current_provider =
+    hover_win and
+    api.nvim_win_is_valid(hover_win) and
+    vim.w[hover_win].hover_provider or nil
+
+  for n, p in ipairs(providers) do
+    if p.id == current_provider then
+      provider_idx = provider_count
+    end
+    if is_enabled(p, bufnr) then
+      active_providers[provider_count] = n
+      provider_count = provider_count + 1
+    end
+  end
+
+  if current_provider then
+    if direction == 'previous' then
+      async.void(run_provider)(
+        providers[active_providers[(provider_idx - 1) % provider_count]],
+        opts
+      )
+    elseif direction == 'next' then
+      async.void(run_provider)(
+        providers[active_providers[(provider_idx + 1) % provider_count]],
+        opts
+      )
+    end
+  end
+end
+
 function M.hover_select(opts)
   init()
 
