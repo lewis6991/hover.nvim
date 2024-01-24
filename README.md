@@ -2,6 +2,8 @@
 
 General framework for context aware hover providers (similar to `vim.lsp.buf.hover`).
 
+Requires Nvim `v0.10.0`
+
 ## Screenshots
 
 <table>
