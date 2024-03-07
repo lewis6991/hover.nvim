@@ -17,7 +17,7 @@ local function str_utfindex(line, index, encoding)
 
   encoding = encoding or 'utf-16'
 
-  if encoding == 'utf-16' or encoding == 'utf-16' then
+  if encoding == 'utf-16' or encoding == 'utf-32' then
     local col32, col16 = vim.str_utfindex(line, index)
     return encoding == 'utf-32' and col32 or col16
   end
