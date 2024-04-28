@@ -70,8 +70,8 @@ local default_border = {
 
 --- @param width integer
 --- @param height integer
---- @param opts vim.api.keyset.float_config
---- @return vim.api.keyset.float_config
+--- @param opts vim.api.keyset.win_config
+--- @return vim.api.keyset.win_config
 local function make_floating_popup_options(width, height, opts)
   opts = opts or {}
 
