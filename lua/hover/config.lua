@@ -6,6 +6,7 @@ local default_config = {
   preview_opts = {
     border = 'single'
   },
+  multiple_hover = 'cycle_providers',
   preview_window = false,
   title = true,
   mouse_providers = { 'LSP' },

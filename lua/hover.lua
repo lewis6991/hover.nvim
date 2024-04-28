@@ -25,9 +25,8 @@ function M.hover_mouse()
   require('hover.actions').hover_mouse()
 end
 
---- @param bufnr integer
-function M.close(bufnr)
-  require('hover.actions').close(bufnr)
+function M.close()
+  require('hover.actions').close()
 end
 
 ---@param user_config Hover.Config
