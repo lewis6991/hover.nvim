@@ -257,7 +257,7 @@ local function run_cycle_providers(opts, direction)
   end
 end
 
---- @param opts Hover.Options?
+--- @param opts Hover.PartialOptions?
 --- @return Hover.Options
 local function make_opts(opts)
   opts = opts or {}
@@ -273,7 +273,7 @@ local function make_opts(opts)
     opts.pos = opts.pos or api.nvim_win_get_cursor(0)
   end
 
-  return opts
+  return opts --[[@as Hover.Options]]
 end
 
 local function init()
@@ -295,7 +295,7 @@ function M.close()
   end
 end
 
---- @param opts Hover.Options?
+--- @param opts Hover.PartialOptions?
 M.hover = async.void(function(opts)
   init()
 
@@ -338,7 +338,7 @@ M.hover_switch = async.void(function(direction, opts)
   run_cycle_providers(opts, direction)
 end)
 
---- @param opts Hover.Options?
+--- @param opts Hover.PartialOptions?
 function M.hover_select(opts)
   init()
 
@@ -369,7 +369,7 @@ function M.hover_select(opts)
   )
 end
 
-local timer --- @type uv.uv_timer_t
+local timer --- @type uv_timer_t
 
 function M.hover_mouse()
   timer = timer or assert(vim.uv.new_timer())
