@@ -2,30 +2,28 @@ local api = vim.api
 
 local M = {}
 
-local function close_preview_window(winnr, bufnrs)
-  vim.schedule(function()
-    -- exit if we are in one of ignored buffers
-    if bufnrs and vim.tbl_contains(bufnrs, api.nvim_get_current_buf()) then
-      return
-    end
-
-    pcall(api.nvim_del_augroup_by_name, 'preview_window_' .. winnr)
-    pcall(api.nvim_win_close, winnr, true)
-  end)
-end
-
 --- @param winid integer
 --- @param hover_bufnr integer
 --- @param bufnr integer
 local function close_preview_autocmd(winid, hover_bufnr, bufnr)
   local augroup = api.nvim_create_augroup('preview_window_' .. winid, {})
 
+  local close_preview_window = function()
+    vim.schedule(function()
+      pcall(api.nvim_del_augroup_by_id, augroup)
+      pcall(api.nvim_win_close, winid, true)
+    end)
+  end
+
   -- close the preview window when entered a buffer that is not
   -- the floating window buffer or the buffer that spawned it
   api.nvim_create_autocmd('BufEnter', {
     group = augroup,
-    callback = function()
-      close_preview_window(winid, {hover_bufnr, bufnr})
+    callback = function(opts)
+      if vim.tbl_contains({ hover_bufnr, bufnr }, opts.buf) then
+        return
+      end
+      close_preview_window()
     end,
   })
 
@@ -33,8 +31,7 @@ local function close_preview_autocmd(winid, hover_bufnr, bufnr)
     group = augroup,
     buffer = bufnr,
     callback = function()
-      vim.b[bufnr].hover_preview = nil
-      close_preview_window(winid)
+      close_preview_window()
     end,
   })
 end
@@ -235,7 +232,7 @@ end
 --- @param bufnr integer?
 --- @param syntax string?
 --- @param opts table
---- @return integer
+--- @return integer, integer
 function M.open_floating_preview(contents, bufnr, syntax, opts)
   opts = opts or {}
   opts.wrap = opts.wrap ~= false -- wrapping by default
@@ -247,14 +244,6 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   end
 
   local cbuf = api.nvim_get_current_buf()
-
-  -- check if another floating preview already exists for this buffer
-  -- and close it if needed
-  local cur_hover = vim.b[cbuf].hover_preview
-  if cur_hover and api.nvim_win_is_valid(cur_hover) then
-    api.nvim_win_close(cur_hover, true)
-  end
-  vim.b[cbuf].hover_preview = nil
 
   local floating_bufnr = bufnr or api.nvim_create_buf(false, true)
   local do_stylize = syntax == 'markdown' and opts.stylize_markdown
@@ -307,10 +296,7 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
 
   close_preview_autocmd(hover_winid, floating_bufnr, cbuf)
 
-  vim.w[hover_winid].hover_preview = hover_winid
-  vim.b[cbuf].hover_preview = hover_winid
-
-  return hover_winid
+  return hover_winid, floating_bufnr
 end
 
 return M

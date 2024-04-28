@@ -47,9 +47,13 @@ use {
             preview_opts = {
                 border = 'single'
             },
-            -- Whether the contents of a currently open hover window should be moved
-            -- to a :h preview-window when pressing the hover keymap.
-            preview_window = false,
+            -- What to do if hover() is called when a hover popup is already open:
+            -- "cycle_providers" - cycle to the next enabled provider
+            -- "focus" - move the cursor into the popup
+            -- "preview_window" - move the popup contents to a :h preview-window
+            -- "close" - close the popup
+            -- "ignore" - do nothing
+            multiple_hover = "cycle_providers"
             title = true,
             mouse_providers = {
                 'LSP'
