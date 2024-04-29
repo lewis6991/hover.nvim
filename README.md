@@ -142,8 +142,8 @@ Call `require('hover').register(<provider>)` with a table containing the followi
 - `execute`: function, executes the hover. Has the following arguments:
     - `opts`: Additional options:
         - `bufnr` (integer)
+        - `winid` (integer)
         - `pos` ({[1]: integer, [2]: integer})
-        - `relative` (string)
     - `done`: callback. First argument should be passed:
         - `nil`/`false` if the hover failed to execute. This will allow other lower priority hovers to run.
         - A table with the following fields:
@@ -174,7 +174,8 @@ require('hover').register {
 ```lua
 --- @class Hover.Options
 --- @field bufnr integer
+--- @field winid integer
+--- (1,0)-based
 --- @field pos {[1]: integer, [2]: integer}
---- @field relative? string
 --- @field providers? string[]
 ```

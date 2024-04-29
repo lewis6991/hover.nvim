@@ -4,14 +4,16 @@ local M  = {}
 
 --- @class Hover.PartialOptions
 --- @field bufnr? integer
+--- @field winid? integer
+--- (1,0)-based
 --- @field pos? {[1]: integer, [2]: integer}
---- @field relative? string
 --- @field providers? string[]
 
 --- @class Hover.Options: Hover.PartialOptions
 --- @field bufnr integer
+--- @field winid integer
+--- (1,0)-based
 --- @field pos {[1]: integer, [2]: integer}
---- @field relative? string
 --- @field providers? string[]
 
 --- @class Hover.RegisterProvider
