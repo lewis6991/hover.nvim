@@ -128,7 +128,10 @@ local function show_hover(popts, provider_id, result)
   local config = get_config()
 
   local opts = vim.deepcopy(config.preview_opts)
-  opts.relative = popts.relative
+
+  local sp = vim.fn.screenpos(popts.winid, popts.pos[1], popts.pos[2] + 1)
+  opts.row = sp.row - 1
+  opts.col = sp.curscol - 1
 
   local util = require('hover.util')
   local hover_win, hover_buf = util.open_floating_preview(result.lines, result.bufnr, result.filetype, opts)
@@ -140,6 +143,7 @@ local function show_hover(popts, provider_id, result)
   end
 
   vim.b[hover_buf].hover = popts.bufnr
+  vim.b[hover_buf].hover_win = popts.winid
   vim.b[hover_buf].hover_pos = popts.pos
   vim.b[hover_buf].hover_provider = provider_id
 end
@@ -267,10 +271,23 @@ local function make_opts(opts)
     -- if a popup already exists, override with its opts
     local hover_buf = api.nvim_win_get_buf(hover_win)
     opts.bufnr = vim.b[hover_buf].hover
+    opts.winid = vim.b[hover_buf].hover_win
     opts.pos = vim.b[hover_buf].hover_pos
   else
-    opts.bufnr = opts.bufnr or api.nvim_get_current_buf()
-    opts.pos = opts.pos or api.nvim_win_get_cursor(0)
+    if not opts.bufnr and not opts.winid then
+      opts.bufnr = api.nvim_get_current_buf()
+      opts.winid = api.nvim_get_current_win()
+    elseif not opts.bufnr then
+      opts.bufnr = api.nvim_win_get_buf(opts.winid)
+    elseif not opts.winid then
+      local winid = vim.fn.bufwinid(opts.bufnr)
+      if winid ~= -1 then
+        opts.winid = winid
+      else
+        opts.winid = api.nvim_get_current_win()
+      end
+    end
+    opts.pos = opts.pos or api.nvim_win_get_cursor(opts.winid)
   end
 
   return opts --[[@as Hover.Options]]
@@ -380,8 +397,7 @@ function M.hover_mouse()
     local pos = vim.fn.getmousepos()
     if pos.winid == 0 then return end
 
-    local buf = vim.fn.winbufnr(pos.winid)
-    if buf == -1 then return end
+    local buf = api.nvim_win_get_buf(pos.winid)
 
     -- don't trigger if hovering in the popup window
     local hover_win = get_hover_win()
@@ -395,10 +411,10 @@ function M.hover_mouse()
     M.close()
 
     M.hover {
-      providers = config.mouse_providers,
-      relative = 'mouse',
-      pos = { pos.line, pos.column },
-      bufnr = buf
+      bufnr = buf,
+      winid = pos.winid,
+      pos = { pos.line, pos.column - 1 },
+      providers = config.mouse_providers
     }
   end))
 end
