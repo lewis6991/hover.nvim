@@ -10,6 +10,8 @@ local function enabled(bufnr)
   }, vim.bo[bufnr].filetype)
 end
 
+--- @param opts Hover.Options
+--- @param done fun(result?: Hover.Result)
 local execute = async.void(function(opts, done)
   local word = vim.fn.expand('<cword>')
   local section = vim.bo[opts.bufnr].filetype == 'tcl' and 'n' or '1'

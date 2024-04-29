@@ -145,7 +145,7 @@ Call `require('hover').register(<provider>)` with a table containing the followi
         - `winid` (integer)
         - `pos` ({[1]: integer, [2]: integer})
     - `done`: callback. First argument should be passed:
-        - `nil`/`false` if the hover failed to execute. This will allow other lower priority hovers to run.
+        - `nil` if the hover failed to execute. This will allow other lower priority hovers to run.
         - A table with the following fields:
           - `lines` (string array)
           - `filetype` (string)
@@ -164,7 +164,7 @@ require('hover').register {
      return true
    end,
    --- @param opts Hover.Options
-   --- @param done fun(result: any)
+   --- @param done fun(result?: Hover.Result)
    execute = function(opts, done)
      done{lines={'TEST'}, filetype="markdown"}
    end
@@ -178,4 +178,9 @@ require('hover').register {
 --- (1,0)-based
 --- @field pos {[1]: integer, [2]: integer}
 --- @field providers? string[]
+
+--- @class Hover.Result
+--- @field lines? string[]
+--- @field bufnr? integer
+--- @field filetype? string
 ```

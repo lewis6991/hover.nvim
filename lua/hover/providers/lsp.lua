@@ -27,7 +27,7 @@ end
 
 --- @param bufnr integer
 --- @param method string
---- @param params_fn fun(client: lsp.Client): table
+--- @param params_fn fun(client: vim.lsp.Client): table
 --- @param handler fun(results: any[])
 local function buf_request_all(bufnr, method, params_fn, handler)
   local results = {}
@@ -51,7 +51,7 @@ end
 --- @param bufnr integer
 --- @param row integer
 --- @param col integer
---- @return fun(client: lsp.Client): table
+--- @return fun(client: vim.lsp.Client): table
 local function create_params(bufnr, row, col)
   return function(client)
       local offset_encoding = client.offset_encoding

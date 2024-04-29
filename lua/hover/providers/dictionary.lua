@@ -34,7 +34,9 @@ end
 
 local cache = {} --- @type table<string,string[]>
 
-local execute = async.void(function(_opts, done)
+--- @param opts Hover.Options
+--- @param done fun(result?: Hover.Result)
+local execute = async.void(function(opts, done)
   local word = vim.fn.expand('<cword>')
 
   if not cache[word] then
