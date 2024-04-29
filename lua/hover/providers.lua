@@ -19,12 +19,12 @@ local M  = {}
 --- @class Hover.RegisterProvider
 --- @field priority integer
 --- @field name string
---- @field execute fun(opts?: Hover.Options, done: fun(result?: Hover.Result))
+--- @field execute fun(opts: Hover.Options, done: fun(result?: Hover.Result))
 --- @field enabled fun(bufnr: integer): boolean
 
 --- @class Hover.Provider: Hover.RegisterProvider
 --- @field id integer
---- @field execute_a fun(opts?: Hover.Options): Hover.Result
+--- @field execute_a fun(opts: Hover.Options): Hover.Result?
 
 --- @type Hover.Provider[]
 local providers = {}

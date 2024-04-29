@@ -5,6 +5,8 @@ local function enabled()
     return vim.fn.expand('<cWORD>'):match(ISSUE_PATTERN) ~= nil
 end
 
+--- @param opts Hover.Options
+--- @param done fun(result?: Hover.Result)
 local function execute(opts, done)
     local query = vim.fn.expand('<cWORD>'):match(ISSUE_PATTERN)
 
@@ -12,7 +14,7 @@ local function execute(opts, done)
 
     job({'jira', 'issue', 'view', query, '--plain'}, function(result)
         if result == nil then
-            done(false)
+            done()
             return
         end
 
