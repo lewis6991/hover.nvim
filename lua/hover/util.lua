@@ -177,6 +177,10 @@ local function make_floating_popup_size(contents, opts)
     end
   end
 
+  if opts.winbar_length then
+    width = math.max(width, opts.winbar_length)
+  end
+
   local wrap_at
   if width > max_width then
     width = max_width
@@ -200,6 +204,10 @@ local function make_floating_popup_size(contents, opts)
         end
       end
     end
+  end
+
+  if opts.winbar then
+    height = height + 1
   end
 
   if max_height then
@@ -303,6 +311,10 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
 
   local float_option = make_floating_popup_options(width, height, opts)
   local hover_winid = api.nvim_open_win(floating_bufnr, false, float_option)
+
+  if opts.winbar then
+    vim.wo[hover_winid].winbar = opts.winbar
+  end
 
   if do_stylize then
     vim.wo[hover_winid].conceallevel = 2

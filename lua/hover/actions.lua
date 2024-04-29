@@ -28,37 +28,6 @@ local function is_enabled(provider, bufnr)
   return provider.enabled == nil or provider.enabled(bufnr)
 end
 
---- @param bufnr integer
---- @param winnr integer
---- @param active_provider_id integer
-local function add_title(bufnr, winnr, active_provider_id)
-  if not has_winbar then
-    vim.notify_once('hover.nvim: `config.title` requires neovim >= 0.8.0',
-                    vim.log.levels.WARN)
-    return
-  end
-
-  ---@type string[]
-  local title = {}
-  local winbar_length = 0
-
-  for _, p in ipairs(providers) do
-    if is_enabled(p, bufnr) then
-      local hl = p.id == active_provider_id and 'TabLineSel' or 'TabLineFill'
-      title[#title+1] = string.format('%%#%s# %s ', hl, p.name)
-      title[#title+1] = '%#Normal# '
-      winbar_length = winbar_length + #p.name + 2 -- + 2 for whitespace padding
-    end
-  end
-
-  local config = api.nvim_win_get_config(winnr)
-  api.nvim_win_set_config(winnr, {
-    height = config.height + 1,
-    width = math.max(config.width, winbar_length + 2) -- + 2 for border
-  })
-  vim.wo[winnr].winbar = table.concat(title, '')
-end
-
 --- @param winid integer
 local function focus_floating_window(winid)
   if vim.fn.pumvisible() ~= 0 then
@@ -121,6 +90,34 @@ end
 --- @field bufnr? integer
 --- @field filetype? string
 
+--- @param bufnr integer
+--- @param active_provider_id integer
+--- @return string? winbar, integer length
+local function make_winbar(bufnr, active_provider_id)
+  if not has_winbar then
+    vim.notify_once('hover.nvim: `config.title` requires neovim >= 0.8.0',
+      vim.log.levels.WARN)
+    return nil, 0
+  end
+
+  --- @type string[]
+  local title = {}
+  local winbar_length = 0
+
+  for _, p in ipairs(providers) do
+    if is_enabled(p, bufnr) then
+      local hl = p.id == active_provider_id and 'TabLineSel' or 'TabLineFill'
+      title[#title + 1] = string.format('%%#%s# %s %%#Normal#', hl, p.name)
+      winbar_length = winbar_length + #p.name + 2 -- + 2 for padding
+    end
+  end
+
+  local winbar = table.concat(title, ' ')
+  winbar_length = winbar_length + (#title - 1) -- (len - 1) separators
+
+  return winbar, winbar_length
+end
+
 --- @param popts Hover.Options
 --- @param provider_id integer
 --- @param result Hover.Result
@@ -133,14 +130,16 @@ local function show_hover(popts, provider_id, result)
   opts.row = sp.row - 1
   opts.col = sp.curscol - 1
 
+  if config.title then
+    local winbar, winbar_length = make_winbar(popts.bufnr, provider_id)
+    opts.winbar = winbar
+    opts.winbar_length = winbar_length
+  end
+
   local util = require('hover.util')
   local hover_win, hover_buf = util.open_floating_preview(result.lines, result.bufnr, result.filetype, opts)
 
   _hover_win = hover_win
-
-  if config.title then
-    add_title(popts.bufnr, hover_win, provider_id)
-  end
 
   vim.b[hover_buf].hover = popts.bufnr
   vim.b[hover_buf].hover_win = popts.winid
