@@ -25,7 +25,7 @@ local execute = async.void(function(opts, done)
   end)
 
   if not ok or api.nvim_buf_line_count(bufnr) <= 1 then
-    api.nvim_buf_delete(bufnr, {force = true})
+    api.nvim_buf_delete(bufnr, { force = true })
     done()
     return
   end
@@ -39,7 +39,7 @@ local execute = async.void(function(opts, done)
     end
   })
 
-  done{ bufnr = bufnr }
+  done { bufnr = bufnr }
 end)
 
 require('hover').register {

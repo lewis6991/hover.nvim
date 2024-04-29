@@ -1,6 +1,6 @@
 local async = require('hover.async')
 
-local M  = {}
+local M = {}
 
 --- @class Hover.PartialOptions
 --- @field bufnr? integer
@@ -54,7 +54,7 @@ function M.register(provider)
       end
     end
   end
-  providers[#providers+1] = provider
+  providers[#providers + 1] = provider
 end
 
 return M

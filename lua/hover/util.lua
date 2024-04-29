@@ -57,13 +57,13 @@ local function trim_empty_lines(lines)
 end
 
 local default_border = {
-  { '' , 'NormalFloat' },
-  { '' , 'NormalFloat' },
-  { '' , 'NormalFloat' },
+  { '',  'NormalFloat' },
+  { '',  'NormalFloat' },
+  { '',  'NormalFloat' },
   { ' ', 'NormalFloat' },
-  { '' , 'NormalFloat' },
-  { '' , 'NormalFloat' },
-  { '' , 'NormalFloat' },
+  { '',  'NormalFloat' },
+  { '',  'NormalFloat' },
+  { '',  'NormalFloat' },
   { ' ', 'NormalFloat' },
 }
 

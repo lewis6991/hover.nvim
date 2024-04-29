@@ -15,21 +15,21 @@ local function enabled()
 end
 
 local function first_to_upper(str)
-  return str:gsub("^%l", string.upper)
+  return str:gsub('^%l', string.upper)
 end
 
 ---@param result string|nil
 ---@param stderr string|nil
 local function process(result, stderr)
   if result == nil then
-    vim.notify(vim.trim(stderr or "(Unknown error)"), vim.log.levels.ERROR, { title = "hover.nvim (gh_user)" })
+    vim.notify(vim.trim(stderr or '(Unknown error)'), vim.log.levels.ERROR, { title = 'hover.nvim (gh_user)' })
     return
   end
 
   local ok, json = pcall(vim.json.decode, result)
   if not ok then
     async.scheduler()
-    vim.notify("Failed to parse gh user result" .. json, vim.log.levels.ERROR)
+    vim.notify('Failed to parse gh user result' .. json, vim.log.levels.ERROR)
     return
   end
 
@@ -50,20 +50,20 @@ local function process(result, stderr)
   } do
     local field = json[key]
     if field and field ~= vim.NIL then
-      res[#res+1] = string.format('**%s**: `%s`', first_to_upper(key), field)
+      res[#res + 1] = string.format('**%s**: `%s`', first_to_upper(key), field)
     end
   end
 
   if json.bio and json.bio ~= vim.NIL then
-      res[#res+1] = '**Bio**:'
+    res[#res + 1] = '**Bio**:'
     for _, l in ipairs(vim.split(json.bio:gsub('\r', ''), '\n')) do
-      res[#res+1] = '>  '..l
+      res[#res + 1] = '>  ' .. l
     end
   end
 
   -- 404 (user does not exist)
   if #res == 0 and json.message and json.message ~= vim.NIL then
-    res[#res+1] = 'ERROR: ' .. json.message
+    res[#res + 1] = 'ERROR: ' .. json.message
   end
 
   return res
@@ -82,10 +82,10 @@ local execute = async.void(function(opts, done)
 
   ---@type string
   local output, stderr
-  output, stderr = job { 'gh', 'api', 'users/'..user, cwd = cwd }
+  output, stderr = job { 'gh', 'api', 'users/' .. user, cwd = cwd }
 
   local results = process(output, stderr)
-  done(results and {lines=results, filetype="markdown"})
+  done(results and { lines = results, filetype = 'markdown' })
 end)
 
 require('hover').register {

@@ -1,4 +1,3 @@
-
 --- @diagnostic disable-next-line:deprecated
 local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
 
@@ -54,22 +53,22 @@ end
 --- @return fun(client: vim.lsp.Client): table
 local function create_params(bufnr, row, col)
   return function(client)
-      local offset_encoding = client.offset_encoding
-      local ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, row, row + 1, true)
+    local offset_encoding = client.offset_encoding
+    local ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, row, row + 1, true)
 
-      if not ok then
-        print(debug.traceback(string.format('ERROR: row %d is out of range: %s', row, lines)))
-      end
+    if not ok then
+      print(debug.traceback(string.format('ERROR: row %d is out of range: %s', row, lines)))
+    end
 
-      local ccol = lines and str_utfindex(lines[1], col, offset_encoding) or col
+    local ccol = lines and str_utfindex(lines[1], col, offset_encoding) or col
 
-      return {
-        textDocument = { uri = vim.uri_from_bufnr(bufnr) },
-        position = {
-          line = row,
-          character = ccol
-        }
+    return {
+      textDocument = { uri = vim.uri_from_bufnr(bufnr) },
+      position = {
+        line = row,
+        character = ccol
       }
+    }
   end
 end
 
@@ -97,7 +96,7 @@ require('hover').register {
           if result.contents then
             local lines = util.convert_input_to_markdown_lines(result.contents)
             if not vim.tbl_isempty(lines) then
-              done{lines=lines, filetype="markdown"}
+              done { lines = lines, filetype = 'markdown' }
               return
             end
           end

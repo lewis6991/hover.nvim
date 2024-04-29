@@ -4,7 +4,7 @@ local ui = require('dap.ui')
 local widgets = require('dap.ui.widgets')
 local hover = require('hover')
 
-local function find_window (buf)
+local function find_window(buf)
   for _, win in ipairs(vim.api.nvim_list_wins()) do
     if vim.api.nvim_win_get_buf(win) == buf then
       return win
@@ -47,15 +47,15 @@ end
 
 local function set_default_bufopts(buf)
   vim.bo[buf].modifiable = false
-  vim.bo[buf].buftype = "nofile"
+  vim.bo[buf].buftype = 'nofile'
   api.nvim_buf_set_keymap(
-    buf, "n", "<CR>", "<Cmd>lua require('dap.ui').trigger_actions({ mode = 'first' })<CR>", {})
+    buf, 'n', '<CR>', "<Cmd>lua require('dap.ui').trigger_actions({ mode = 'first' })<CR>", {})
   api.nvim_buf_set_keymap(
-    buf, "n", "a", "<Cmd>lua require('dap.ui').trigger_actions()<CR>", {})
+    buf, 'n', 'a', "<Cmd>lua require('dap.ui').trigger_actions()<CR>", {})
   api.nvim_buf_set_keymap(
-    buf, "n", "o", "<Cmd>lua require('dap.ui').trigger_actions()<CR>", {})
+    buf, 'n', 'o', "<Cmd>lua require('dap.ui').trigger_actions()<CR>", {})
   api.nvim_buf_set_keymap(
-    buf, "n", "<2-LeftMouse>", "<Cmd>lua require('dap.ui').trigger_actions()<CR>", {})
+    buf, 'n', '<2-LeftMouse>', "<Cmd>lua require('dap.ui').trigger_actions()<CR>", {})
 end
 
 local function new_buf()
@@ -67,13 +67,13 @@ end
 hover.register {
   name = 'DAP',
   enabled = function(bufnr)
-    return dap.status() ~= ""
+    return dap.status() ~= ''
   end,
   execute = function(opts, done)
     local buf = new_buf()
     local layer = resizing_layer(buf)
     local fake_view = {
-      layer = function ()
+      layer = function()
         return layer
       end,
     }
