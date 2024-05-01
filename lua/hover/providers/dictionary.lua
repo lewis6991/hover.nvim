@@ -22,10 +22,10 @@ local function process(result)
   }
 
   for _, def in ipairs(json.meanings[1].definitions) do
-    lines[#lines+1] = ''
-    lines[#lines+1] = def.definition
+    lines[#lines + 1] = ''
+    lines[#lines + 1] = def.definition
     if def.example then
-      lines[#lines+1] = 'Example: '..def.example
+      lines[#lines + 1] = 'Example: ' .. def.example
     end
   end
 
@@ -34,7 +34,9 @@ end
 
 local cache = {} --- @type table<string,string[]>
 
-local execute = async.void(function(_opts, done)
+--- @param opts Hover.Options
+--- @param done fun(result?: Hover.Result)
+local execute = async.void(function(opts, done)
   local word = vim.fn.expand('<cword>')
 
   if not cache[word] then
@@ -42,14 +44,14 @@ local execute = async.void(function(_opts, done)
 
     ---@type string[]
     local output = job {
-      'curl', 'https://api.dictionaryapi.dev/api/v2/entries/en/'..word
+      'curl', 'https://api.dictionaryapi.dev/api/v2/entries/en/' .. word
     }
 
-    local results = process(output) or {'no definition for '..word}
+    local results = process(output) or { 'no definition for ' .. word }
     cache[word] = results
   end
 
-  done({lines=cache[word], filetype="markdown"})
+  done({ lines = cache[word], filetype = 'markdown' })
 end)
 
 require('hover').register {

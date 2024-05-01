@@ -2,30 +2,28 @@ local api = vim.api
 
 local M = {}
 
-local function close_preview_window(winnr, bufnrs)
-  vim.schedule(function()
-    -- exit if we are in one of ignored buffers
-    if bufnrs and vim.tbl_contains(bufnrs, api.nvim_get_current_buf()) then
-      return
-    end
-
-    pcall(api.nvim_del_augroup_by_name, 'preview_window_' .. winnr)
-    pcall(api.nvim_win_close, winnr, true)
-  end)
-end
-
 --- @param winid integer
 --- @param hover_bufnr integer
 --- @param bufnr integer
 local function close_preview_autocmd(winid, hover_bufnr, bufnr)
   local augroup = api.nvim_create_augroup('preview_window_' .. winid, {})
 
+  local close_preview_window = function()
+    vim.schedule(function()
+      pcall(api.nvim_del_augroup_by_id, augroup)
+      pcall(api.nvim_win_close, winid, true)
+    end)
+  end
+
   -- close the preview window when entered a buffer that is not
   -- the floating window buffer or the buffer that spawned it
   api.nvim_create_autocmd('BufEnter', {
     group = augroup,
-    callback = function()
-      close_preview_window(winid, {hover_bufnr, bufnr})
+    callback = function(opts)
+      if vim.tbl_contains({ hover_bufnr, bufnr }, opts.buf) then
+        return
+      end
+      close_preview_window()
     end,
   })
 
@@ -33,8 +31,7 @@ local function close_preview_autocmd(winid, hover_bufnr, bufnr)
     group = augroup,
     buffer = bufnr,
     callback = function()
-      vim.b[bufnr].hover_preview = nil
-      close_preview_window(winid)
+      close_preview_window()
     end,
   })
 end
@@ -59,113 +56,99 @@ local function trim_empty_lines(lines)
   return vim.list_extend({}, lines, start, finish)
 end
 
----@type ({[1]: string, [2]: string}|string)[]
 local default_border = {
-  { '' , 'NormalFloat' },
-  { '' , 'NormalFloat' },
-  { '' , 'NormalFloat' },
+  { '',  'NormalFloat' },
+  { '',  'NormalFloat' },
+  { '',  'NormalFloat' },
   { ' ', 'NormalFloat' },
-  { '' , 'NormalFloat' },
-  { '' , 'NormalFloat' },
-  { '' , 'NormalFloat' },
+  { '',  'NormalFloat' },
+  { '',  'NormalFloat' },
+  { '',  'NormalFloat' },
   { ' ', 'NormalFloat' },
 }
 
---- @param width integer
---- @param height integer
---- @param opts vim.api.keyset.float_config
---- @return vim.api.keyset.float_config
-local function make_floating_popup_options(width, height, opts)
-  opts = opts or {}
-
-  local anchor = ''
-  local row, col
-
-  local lines_above = vim.fn.winline() - 1
-  local lines_below = vim.fn.winheight(0) - lines_above
-
-  if lines_above < lines_below then
-    anchor = anchor .. 'N'
-    height = math.min(lines_below, height)
-    row = 1
-  else
-    anchor = anchor .. 'S'
-    height = math.min(lines_above, height)
-    row = 0
-  end
-
-  if vim.fn.wincol() + width <= vim.o.columns then
-    anchor = anchor .. 'W'
-    col = 0
-  else
-    anchor = anchor .. 'E'
-    col = 1
-  end
-
-  return {
-    anchor    = anchor,
-    col       = col,
-    height    = height,
-    focusable = opts.focusable,
-    relative  = opts.relative or 'cursor',
-    row       = row,
-    style     = 'minimal',
-    width     = width,
-    border    = opts.border or default_border,
-    zindex    = opts.zindex or 50,
-  }
-end
-
-local BORDER_WIDTHS = {
-  none    = 0,
-  single  = 2,
-  double  = 2,
-  rounded = 2,
-  solid   = 2,
-  shadow  = 1,
+local BORDER_SIZES = {
+  none = { 0, 0 },
+  single = { 2, 2 },
+  double = { 2, 2 },
+  rounded = { 2, 2 },
+  solid = { 2, 2 },
+  shadow = { 1, 1 },
 }
 
-local function get_border_width(opts)
+--- Check the border given by opts or the default border for the additional
+--- size it adds to a float.
+--- @param opts table optional options for the floating window
+---           - border (string or table) the border
+--- @return table size of border in the form of { height = height, width = width }
+local function get_border_size(opts)
+  --- @type ({[1]: string, [2]: string}|string)[]
   local border = opts and opts.border or default_border
 
+  local height = 0
+  local width = 0
+
   if type(border) == 'string' then
-    if not BORDER_WIDTHS[border] then
+    if not BORDER_SIZES[border] then
       error(string.format(
         'invalid floating preview border: %s. :help vim.api.nvim_open_win()',
         vim.inspect(border)
       ))
     end
-    return BORDER_WIDTHS[border]
-  end
-
-
-  if 8 % #border ~= 0 then
-    error(string.format(
-      'invalid floating preview border: %s. :help vim.api.nvim_open_win()',
-      vim.inspect(border)
-    ))
-  end
-
-  ---@param id integer
-  ---@return integer
-  local function border_width(id)
-    id = (id - 1) % #border + 1
-    if type(border[id]) == 'table' then
-      -- border specified as a table of <character, highlight group>
-      return vim.fn.strdisplaywidth(border[id][1])
-    elseif type(border[id]) == 'string' then
-      -- border specified as a list of border characters
-      return vim.fn.strdisplaywidth(border[id] --[[@as string]])
-    end
-    error(
-      string.format(
+    height, width = unpack(BORDER_SIZES[border])
+  else
+    if 8 % #border ~= 0 then
+      error(string.format(
         'invalid floating preview border: %s. :help vim.api.nvim_open_win()',
         vim.inspect(border)
+      ))
+    end
+
+    --- @param id integer
+    --- @return integer
+    local function border_width(id)
+      id = (id - 1) % #border + 1
+      if type(border[id]) == 'table' then
+        -- border specified as a table of <character, highlight group>
+        return vim.fn.strdisplaywidth(border[id][1])
+      elseif type(border[id]) == 'string' then
+        -- border specified as a list of border characters
+        return vim.fn.strdisplaywidth(border[id] --[[@as string]])
+      end
+      error(
+        string.format(
+          'invalid floating preview border: %s. :help vim.api.nvim_open_win()',
+          vim.inspect(border)
+        )
       )
-    )
+    end
+
+    --- @param id integer
+    --- @return integer
+    local function border_height(id)
+      id = (id - 1) % #border + 1
+      if type(border[id]) == 'table' then
+        -- border specified as a table of <character, highlight group>
+        return #border[id][1] > 0 and 1 or 0
+      elseif type(border[id]) == 'string' then
+        -- border specified as a list of border characters
+        return #border[id] > 0 and 1 or 0
+      end
+      error(
+        string.format(
+          'invalid floating preview border: %s. :help vim.api.nvim_open_win()',
+          vim.inspect(border)
+        )
+      )
+    end
+
+    height = height + border_height(2) -- top
+    height = height + border_height(6) -- bottom
+    width = width + border_width(4)    -- right
+    width = width + border_width(8)    -- left
   end
 
-  return border_width(4 --[[right]]) + border_width(8 --[[left]])
+  return { height = height, width = width }
 end
 
 --- @param contents string[]
@@ -175,12 +158,16 @@ end
 local function make_floating_popup_size(contents, opts)
   opts = opts or {}
 
-  local width      = opts.width
-  local height     = opts.height
-  local wrap_at    = opts._wrap_at
-  local max_width  = opts.max_width
+  local width = opts.width
+  local height = opts.height
+  local max_width = opts.max_width
   local max_height = opts.max_height
   local line_widths = {}
+
+  local border_width = get_border_size(opts).width
+  if not max_width or vim.o.columns - border_width < max_width then
+    max_width = vim.o.columns - border_width
+  end
 
   if not width then
     width = 1 -- not zero, avoid modulo by zero if content is empty
@@ -190,27 +177,21 @@ local function make_floating_popup_size(contents, opts)
     end
   end
 
-  local border_width = get_border_width(opts)
-  local screen_width = api.nvim_win_get_width(0)
-  width = math.min(width, screen_width)
-
-  -- make sure borders are always inside the screen
-  if width + border_width > screen_width then
-    width = width - (width + border_width - screen_width)
+  if opts.winbar_length then
+    width = math.max(width, opts.winbar_length)
   end
 
-  if wrap_at and wrap_at > width then
-    wrap_at = width
-  end
-
-  if max_width then
-    width = math.min(width, max_width)
-    wrap_at = math.min(wrap_at or max_width, max_width)
+  local wrap_at
+  if width > max_width then
+    width = max_width
+    if opts.wrap then
+      wrap_at = width
+    end
   end
 
   if not height then
     height = #contents
-    if wrap_at and width >= wrap_at then
+    if wrap_at then
       height = 0
       if vim.tbl_isempty(line_widths) then
         for _, line in ipairs(contents) do
@@ -224,6 +205,11 @@ local function make_floating_popup_size(contents, opts)
       end
     end
   end
+
+  if opts.winbar then
+    height = height + 1
+  end
+
   if max_height then
     height = math.min(height, max_height)
   end
@@ -231,11 +217,115 @@ local function make_floating_popup_size(contents, opts)
   return width, height
 end
 
+--- @param width integer
+--- @param height integer
+--- @param opts vim.api.keyset.win_config
+--- @return vim.api.keyset.win_config
+local function make_floating_popup_options(width, height, opts)
+  opts = opts or {}
+
+  local anchor = ''
+  local row = opts.row or 0
+  local col = opts.col or 0
+
+  local editor_height = vim.o.lines - vim.o.cmdheight
+
+  local lines_above = row
+  local lines_below = editor_height - lines_above - 1
+
+  local border_size = get_border_size(opts)
+
+  local border_height = border_size.height
+  if lines_above < lines_below then
+    anchor = anchor .. 'N'
+    height = math.max(math.min(lines_below - border_height, height), 0)
+    row = row + 1
+  else
+    anchor = anchor .. 'S'
+    height = math.max(math.min(lines_above - border_height, height), 0)
+  end
+
+  local border_width = border_size.width
+  if col + width + border_width <= vim.o.columns then
+    anchor = anchor .. 'W'
+  else
+    anchor = anchor .. 'E'
+    col = col + 1
+  end
+
+  return {
+    anchor    = anchor,
+    col       = col,
+    height    = height,
+    focusable = opts.focusable,
+    relative  = 'editor',
+    row       = row,
+    style     = 'minimal',
+    width     = width,
+    border    = opts.border or default_border,
+    zindex    = opts.zindex or 50,
+  }
+end
+
+--- @param winid integer
+--- @param bufnr integer
+--- @param opts table
+local function autoresize_preview_listener(winid, bufnr, opts)
+  local updating = false
+
+  local debounce_update = function()
+    -- make sure bufnr and winid are still valid
+    if
+        not api.nvim_win_is_valid(winid)
+        or not api.nvim_buf_is_valid(bufnr)
+    then
+      return
+    end
+
+    local contents = api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    local width, height = make_floating_popup_size(contents, opts)
+
+    -- taken from make_floating_popup_options
+
+    local editor_height = vim.o.lines - vim.o.cmdheight
+
+    local lines_above = opts.row or 0
+    local lines_below = editor_height - lines_above - 1
+
+    local border_size = get_border_size(opts)
+
+    local border_height = border_size.height
+    if lines_above < lines_below then
+      height = math.max(math.min(lines_below - border_height, height), 0)
+    else
+      height = math.max(math.min(lines_above - border_height, height), 0)
+    end
+
+    api.nvim_win_set_width(winid, width)
+    api.nvim_win_set_height(winid, height)
+
+    updating = false
+  end
+
+  api.nvim_buf_attach(bufnr, false, {
+    on_lines = function()
+      if not api.nvim_win_is_valid(winid) then
+        -- detach if the buffer was moved to e.g. a preview-window
+        return true
+      end
+      if not updating then
+        updating = true
+        vim.schedule(debounce_update)
+      end
+    end
+  })
+end
+
 --- @param contents string[]?
 --- @param bufnr integer?
 --- @param syntax string?
 --- @param opts table
---- @return integer
+--- @return integer, integer
 function M.open_floating_preview(contents, bufnr, syntax, opts)
   opts = opts or {}
   opts.wrap = opts.wrap ~= false -- wrapping by default
@@ -247,14 +337,6 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   end
 
   local cbuf = api.nvim_get_current_buf()
-
-  -- check if another floating preview already exists for this buffer
-  -- and close it if needed
-  local cur_hover = vim.b[cbuf].hover_preview
-  if cur_hover and api.nvim_win_is_valid(cur_hover) then
-    api.nvim_win_close(cur_hover, true)
-  end
-  vim.b[cbuf].hover_preview = nil
 
   local floating_bufnr = bufnr or api.nvim_create_buf(false, true)
   local do_stylize = syntax == 'markdown' and opts.stylize_markdown
@@ -279,12 +361,14 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
     vim.bo[floating_bufnr].readonly = ro
   end
 
-  -- Compute size of float needed to show (wrapped) lines
-  opts._wrap_at = opts.wrap and api.nvim_win_get_width(0) or nil
   local width, height = make_floating_popup_size(contents, opts)
 
   local float_option = make_floating_popup_options(width, height, opts)
   local hover_winid = api.nvim_open_win(floating_bufnr, false, float_option)
+
+  if opts.winbar then
+    vim.wo[hover_winid].winbar = opts.winbar
+  end
 
   if do_stylize then
     vim.wo[hover_winid].conceallevel = 2
@@ -306,11 +390,9 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   })
 
   close_preview_autocmd(hover_winid, floating_bufnr, cbuf)
+  autoresize_preview_listener(hover_winid, floating_bufnr, opts)
 
-  vim.w[hover_winid].hover_preview = hover_winid
-  vim.b[cbuf].hover_preview = hover_winid
-
-  return hover_winid
+  return hover_winid, floating_bufnr
 end
 
 return M

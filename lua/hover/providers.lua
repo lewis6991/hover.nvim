@@ -1,22 +1,30 @@
 local async = require('hover.async')
 
-local M  = {}
+local M = {}
 
---- @class Hover.Options
+--- @class Hover.PartialOptions
+--- @field bufnr? integer
+--- @field winid? integer
+--- (1,0)-based
+--- @field pos? {[1]: integer, [2]: integer}
+--- @field providers? string[]
+
+--- @class Hover.Options: Hover.PartialOptions
 --- @field bufnr integer
+--- @field winid integer
+--- (1,0)-based
 --- @field pos {[1]: integer, [2]: integer}
---- @field relative? string
 --- @field providers? string[]
 
 --- @class Hover.RegisterProvider
 --- @field priority integer
 --- @field name string
---- @field execute fun(opts?: Hover.Options, done: fun(result?: Hover.Result))
+--- @field execute fun(opts: Hover.Options, done: fun(result?: Hover.Result))
 --- @field enabled fun(bufnr: integer): boolean
 
---- @class Hover.Provider : Hover.RegisterProvider
+--- @class Hover.Provider: Hover.RegisterProvider
 --- @field id integer
---- @field execute_a fun(opts?: Hover.Options): Hover.Result
+--- @field execute_a fun(opts: Hover.Options): Hover.Result?
 
 --- @type Hover.Provider[]
 local providers = {}
@@ -46,7 +54,7 @@ function M.register(provider)
       end
     end
   end
-  providers[#providers+1] = provider
+  providers[#providers + 1] = provider
 end
 
 return M

@@ -10,14 +10,14 @@ end
 ---@param stderr string|nil
 local function process(result, stderr)
   if result == nil then
-    vim.notify(vim.trim(stderr or "(Unknown error)"), vim.log.levels.ERROR, { title = "hover.nvim (gh)" })
+    vim.notify(vim.trim(stderr or '(Unknown error)'), vim.log.levels.ERROR, { title = 'hover.nvim (gh)' })
     return
   end
 
   local ok, json = pcall(vim.json.decode, result)
   if not ok then
     async.scheduler()
-    vim.notify("Failed to parse gh result: " .. json, vim.log.levels.ERROR)
+    vim.notify('Failed to parse gh result: ' .. json, vim.log.levels.ERROR)
     return
   end
 
@@ -33,12 +33,14 @@ local function process(result, stderr)
   }
 
   for _, l in ipairs(vim.split(json.body, '\r?\n')) do
-    lines[#lines+1] = l
+    lines[#lines + 1] = l
   end
 
   return lines
 end
 
+--- @param opts Hover.Options
+--- @param done fun(result?: Hover.Result)
 local execute = async.void(function(opts, done)
   local bufnr = api.nvim_get_current_buf()
   local cwd = fn.fnamemodify(api.nvim_buf_get_name(bufnr), ':p:h')
@@ -67,13 +69,13 @@ local execute = async.void(function(opts, done)
         cwd = cwd
       }
     else
-      done(false)
+      done()
       return
     end
   end
 
   local results = process(output, stderr)
-  done(results and {lines=results, filetype="markdown"})
+  done(results and { lines = results, filetype = 'markdown' })
 end)
 
 require('hover').register {

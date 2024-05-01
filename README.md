@@ -47,9 +47,13 @@ use {
             preview_opts = {
                 border = 'single'
             },
-            -- Whether the contents of a currently open hover window should be moved
-            -- to a :h preview-window when pressing the hover keymap.
-            preview_window = false,
+            -- What to do if hover() is called when a hover popup is already open:
+            -- "cycle_providers" - cycle to the next enabled provider
+            -- "focus" - move the cursor into the popup
+            -- "preview_window" - move the popup contents to a :h preview-window
+            -- "close" - close the popup
+            -- "ignore" - do nothing
+            multiple_hover = "cycle_providers"
             title = true,
             mouse_providers = {
                 'LSP'
@@ -138,10 +142,10 @@ Call `require('hover').register(<provider>)` with a table containing the followi
 - `execute`: function, executes the hover. Has the following arguments:
     - `opts`: Additional options:
         - `bufnr` (integer)
+        - `winid` (integer)
         - `pos` ({[1]: integer, [2]: integer})
-        - `relative` (string)
     - `done`: callback. First argument should be passed:
-        - `nil`/`false` if the hover failed to execute. This will allow other lower priority hovers to run.
+        - `nil` if the hover failed to execute. This will allow other lower priority hovers to run.
         - A table with the following fields:
           - `lines` (string array)
           - `filetype` (string)
@@ -154,23 +158,29 @@ Call `require('hover').register(<provider>)` with a table containing the followi
 ```lua
 -- Simple
 require('hover').register {
-   name = 'Simple',
-   --- @param bufnr integer
-   enabled = function(bufnr)
-     return true
-   end,
-   --- @param opts Hover.Options
-   --- @param done fun(result: any)
-   execute = function(opts, done)
-     done{lines={'TEST'}, filetype="markdown"}
-   end
+  name = 'Simple',
+  --- @param bufnr integer
+  enabled = function(bufnr)
+    return true
+  end,
+  --- @param opts Hover.Options
+  --- @param done fun(result?: Hover.Result)
+  execute = function(opts, done)
+    done { lines = { 'TEST' }, filetype = 'markdown' }
+  end
 }
 ```
 
 ```lua
 --- @class Hover.Options
 --- @field bufnr integer
+--- @field winid integer
+--- (1,0)-based
 --- @field pos {[1]: integer, [2]: integer}
---- @field relative? string
 --- @field providers? string[]
+
+--- @class Hover.Result
+--- @field lines? string[]
+--- @field bufnr? integer
+--- @field filetype? string
 ```
