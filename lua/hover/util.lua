@@ -267,6 +267,60 @@ local function make_floating_popup_options(width, height, opts)
   }
 end
 
+--- @param winid integer
+--- @param bufnr integer
+--- @param opts table
+local function autoresize_preview_listener(winid, bufnr, opts)
+  local updating = false
+
+  local debounce_update = function()
+    -- make sure bufnr and winid are still valid
+    if
+        not api.nvim_win_is_valid(winid)
+        or not api.nvim_buf_is_valid(bufnr)
+    then
+      return
+    end
+
+    local contents = api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    local width, height = make_floating_popup_size(contents, opts)
+
+    -- taken from make_floating_popup_options
+
+    local editor_height = vim.o.lines - vim.o.cmdheight
+
+    local lines_above = opts.row or 0
+    local lines_below = editor_height - lines_above - 1
+
+    local border_size = get_border_size(opts)
+
+    local border_height = border_size.height
+    if lines_above < lines_below then
+      height = math.max(math.min(lines_below - border_height, height), 0)
+    else
+      height = math.max(math.min(lines_above - border_height, height), 0)
+    end
+
+    api.nvim_win_set_width(winid, width)
+    api.nvim_win_set_height(winid, height)
+
+    updating = false
+  end
+
+  api.nvim_buf_attach(bufnr, false, {
+    on_lines = function()
+      if not api.nvim_win_is_valid(winid) then
+        -- detach if the buffer was moved to e.g. a preview-window
+        return true
+      end
+      if not updating then
+        updating = true
+        vim.schedule(debounce_update)
+      end
+    end
+  })
+end
+
 --- @param contents string[]?
 --- @param bufnr integer?
 --- @param syntax string?
@@ -336,6 +390,7 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   })
 
   close_preview_autocmd(hover_winid, floating_bufnr, cbuf)
+  autoresize_preview_listener(hover_winid, floating_bufnr, opts)
 
   return hover_winid, floating_bufnr
 end
