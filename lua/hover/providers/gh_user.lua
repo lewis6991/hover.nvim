@@ -5,6 +5,8 @@ local async = require('hover.async')
 ---@return string
 local function get_user()
   local WORD = fn.expand('<cWORD>')
+  -- The regex is not perfect, but it should match @user and user
+  -- The %f[%w_] and %f[^%w_] is because of the lack of \b in Lua. https://stackoverflow.com/a/32854326/213124
   local user = WORD:match '%f[%w_]@?(.*)%f[^%w_]'
   return user
 end
