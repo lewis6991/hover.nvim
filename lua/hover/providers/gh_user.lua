@@ -5,7 +5,7 @@ local async = require('hover.async')
 ---@return string
 local function get_user()
   local WORD = fn.expand('<cWORD>')
-  local user = WORD:match('TODO%(@?(.*)%):')
+  local user = WORD:match '%f[%w_]@?(.*)%f[^%w_]'
   return user
 end
 
