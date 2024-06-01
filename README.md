@@ -41,6 +41,7 @@ use {
                 -- require('hover.providers.gh_user')
                 -- require('hover.providers.jira')
                 -- require('hover.providers.dap')
+                -- require('hover.providers.diagnostic')
                 -- require('hover.providers.man')
                 -- require('hover.providers.dictionary')
             end,
@@ -80,12 +81,19 @@ Builtin LSP
 
 Priority: 1000
 
+### Diagnostics
+`require('hover.providers.diagnostic')`
+
+Diagnostics using `vim.diagnostic`
+
+Priority: 1001
+
 ### DAP
 `require('hover.providers.dap')`
 
 [DAP](https://github.com/mfussenegger/nvim-dap) hover
 
-Priority: 1001
+Priority: 1002
 
 ### Github: Issues and PR's
 `require('hover.providers.gh')`
