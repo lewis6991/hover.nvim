@@ -242,10 +242,6 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   opts.stylize_markdown = opts.stylize_markdown ~= false and vim.g.syntax_on ~= nil
   opts.focus = opts.focus ~= false
 
-  if not contents and bufnr then
-    contents = api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  end
-
   local cbuf = api.nvim_get_current_buf()
 
   -- check if another floating preview already exists for this buffer
@@ -259,24 +255,36 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   local floating_bufnr = bufnr or api.nvim_create_buf(false, true)
   local do_stylize = syntax == 'markdown' and opts.stylize_markdown
 
-  -- Clean up input: trim empty lines from the end, pad
-  contents = trim_empty_lines(assert(contents))
+  -- if contents given, always set buf lines
+  -- if no bufnr, contents is required
+  if contents or not bufnr then
+    -- Clean up input: trim empty lines from the end, pad
+    contents = trim_empty_lines(assert(contents))
 
-  if do_stylize then
-    -- applies the syntax and sets the lines to the buffer
-    contents = vim.lsp.util.stylize_markdown(floating_bufnr, contents, opts)
+    if do_stylize then
+      -- applies the syntax and sets the lines to the buffer
+      contents = vim.lsp.util.stylize_markdown(floating_bufnr, contents, opts)
+    else
+      if syntax then
+        vim.bo[floating_bufnr].syntax = syntax
+      end
+
+      local m = vim.bo[floating_bufnr].modifiable
+      local ro = vim.bo[floating_bufnr].readonly
+      vim.bo[floating_bufnr].modifiable = true
+      vim.bo[floating_bufnr].readonly = false
+      api.nvim_buf_set_lines(floating_bufnr, 0, -1, true, contents)
+      vim.bo[floating_bufnr].modifiable = m
+      vim.bo[floating_bufnr].readonly = ro
+    end
   else
+    -- no contents provided, but we have a bufnr
+    -- so get contents from the buffer (needed to compute float size)
+    contents = api.nvim_buf_get_lines(bufnr, 0, -1, false)
+
     if syntax then
       vim.bo[floating_bufnr].syntax = syntax
     end
-
-    local m = vim.bo[floating_bufnr].modifiable
-    local ro = vim.bo[floating_bufnr].readonly
-    vim.bo[floating_bufnr].modifiable = true
-    vim.bo[floating_bufnr].readonly = false
-    api.nvim_buf_set_lines(floating_bufnr, 0, -1, true, contents)
-    vim.bo[floating_bufnr].modifiable = m
-    vim.bo[floating_bufnr].readonly = ro
   end
 
   -- Compute size of float needed to show (wrapped) lines

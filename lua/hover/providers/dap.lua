@@ -84,5 +84,5 @@ hover.register {
     widgets.expression.render(fake_view, expression)
     done { bufnr = buf }
   end,
-  priority = 1001, -- one above lsp
+  priority = 1002, -- above lsp and diagnostics
 }
