@@ -68,7 +68,7 @@ hover.register {
   name = 'DAP',
   --- @param bufnr integer
   enabled = function(bufnr)
-    return dap.status() ~= ""
+    return dap.session()
   end,
   --- @param opts Hover.Options
   --- @param done fun(result: any)
