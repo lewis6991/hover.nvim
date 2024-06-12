@@ -39,6 +39,8 @@ local function process(result, stderr)
   return lines
 end
 
+--- @param opts Hover.Options
+--- @param done fun(result?: Hover.Result)
 local execute = async.void(function(opts, done)
   local bufnr = api.nvim_get_current_buf()
   local cwd = fn.fnamemodify(api.nvim_buf_get_name(bufnr), ':p:h')
@@ -67,7 +69,7 @@ local execute = async.void(function(opts, done)
         cwd = cwd
       }
     else
-      done(false)
+      done()
       return
     end
   end

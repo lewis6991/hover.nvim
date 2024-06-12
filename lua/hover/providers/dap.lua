@@ -66,12 +66,9 @@ end
 
 hover.register {
   name = 'DAP',
-  --- @param bufnr integer
   enabled = function(bufnr)
     return dap.session()
   end,
-  --- @param opts Hover.Options
-  --- @param done fun(result: any)
   execute = function(opts, done)
     local buf = new_buf()
     local layer = resizing_layer(buf)
