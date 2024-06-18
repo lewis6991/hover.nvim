@@ -1,5 +1,3 @@
-local api = vim.api
-
 --- @param bufnr integer
 local function enabled(bufnr)
   local inspect = vim.inspect_pos(bufnr)
@@ -14,7 +12,7 @@ end
 
 --- @param opts Hover.Options
 --- @param done fun(result: any)
-local function execute (opts, done)
+local function execute(opts, done)
   local items = vim.inspect_pos(
     opts.bufnr,
     opts and opts.pos and opts.pos[1] - 1,
@@ -24,26 +22,19 @@ local function execute (opts, done)
     return done()
   end
 
-  local buffer = api.nvim_create_buf(false, true)
-  local ns = api.nvim_create_namespace("HoverInspect")
-  local count = 1
   local hls = {}
   local line = ""
+  local lines = {}
 
   local function append(str, hl)
     line = line .. str
     if hl ~= nil then
-      table.insert(hls, { hl, #line - #str, #line })
+      table.insert(hls, { hl, #lines + 1, #line - #str, #line })
     end
   end
 
   local function nl()
-    api.nvim_buf_set_lines(buffer, -1, -1, false, { line })
-    for _, hl in ipairs(hls) do
-      api.nvim_buf_add_highlight(buffer, ns, hl[1], count, hl[2], hl[3])
-    end
-    count = count + 1
-    hls = {}
+    table.insert(lines, line)
     line = ""
   end
 
@@ -78,8 +69,8 @@ local function execute (opts, done)
     nl()
     local sorted_marks = vim.fn.sort(items.semantic_tokens, function(left, right)
       local left_first = left.opts.priority < right.opts.priority
-      or left.opts.priority == right.opts.priority and
-      left.opts.hl_group < right.opts.hl_group
+        or left.opts.priority == right.opts.priority
+        and left.opts.hl_group < right.opts.hl_group
       return left_first and -1 or 1
     end)
     for _, extmark in ipairs(sorted_marks) do
@@ -114,9 +105,15 @@ local function execute (opts, done)
     nl()
   end
 
-  done {
-    bufnr = buffer,
-  }
+  local buffer = vim.api.nvim_create_buf(false, true)
+  local ns = vim.api.nvim_create_namespace("")
+
+  vim.api.nvim_buf_set_lines(buffer, -1, -1, true, lines)
+  for _, hl in ipairs(hls) do
+    vim.api.nvim_buf_add_highlight(buffer, ns, hl[1], hl[2], hl[3], hl[4])
+  end
+
+  done { bufnr = buffer }
 end
 
 require('hover').register {
