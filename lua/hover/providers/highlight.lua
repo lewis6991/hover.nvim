@@ -7,7 +7,7 @@ local function enabled(bufnr)
   return (inspect.treesitter ~= nil and #inspect.treesitter > 0)
       or (inspect.semantic_tokens ~= nil and #inspect.semantic_tokens > 0)
       or (inspect.syntax ~= nil and #inspect.syntax > 0)
-      or (inspect.extmarks ~= nil and #inspect.semantic_tokens > 0)
+      or (inspect.extmarks ~= nil and #inspect.extmarks > 0)
 end
 
 --- @param opts Hover.Options
