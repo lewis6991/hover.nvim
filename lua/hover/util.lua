@@ -1,3 +1,5 @@
+local highlights = require("hover.highlights").HIGHLIGHT_GROUPS
+local highlight_defaults = require("hover.highlights").HIGHLIGHT_GROUP_DEFAULTS
 local api = vim.api
 
 local M = {}
@@ -61,14 +63,14 @@ end
 
 ---@type ({[1]: string, [2]: string}|string)[]
 local default_border = {
-  { '' , 'NormalFloat' },
-  { '' , 'NormalFloat' },
-  { '' , 'NormalFloat' },
-  { ' ', 'NormalFloat' },
-  { '' , 'NormalFloat' },
-  { '' , 'NormalFloat' },
-  { '' , 'NormalFloat' },
-  { ' ', 'NormalFloat' },
+  { '',  highlights.HoverBorder },
+  { '',  highlights.HoverBorder },
+  { '',  highlights.HoverBorder },
+  { ' ', highlights.HoverBorder },
+  { '',  highlights.HoverBorder },
+  { '',  highlights.HoverBorder },
+  { '',  highlights.HoverBorder },
+  { ' ', highlights.HoverBorder },
 }
 
 --- @param width integer
@@ -293,6 +295,14 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
 
   local float_option = make_floating_popup_options(width, height, opts)
   local hover_winid = api.nvim_open_win(floating_bufnr, false, float_option)
+
+  -- Set custom highlights for the window
+  local _winhl = {}
+  for hl, link in pairs(highlight_defaults) do
+    table.insert(_winhl, link .. ':' .. hl)
+  end
+  local winhl = table.concat(_winhl, ',')
+  vim.api.nvim_set_option_value('winhl', winhl, { win = hover_winid })
 
   if do_stylize then
     vim.wo[hover_winid].conceallevel = 2

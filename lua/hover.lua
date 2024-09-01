@@ -33,6 +33,7 @@ end
 ---@param user_config Hover.Config
 function M.setup(user_config)
   require('hover.config').set(user_config)
+  require('hover.highlights').setup()
 end
 
 return M

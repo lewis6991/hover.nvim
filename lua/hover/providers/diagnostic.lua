@@ -1,13 +1,14 @@
+local highlights = require('hover.highlights').HIGHLIGHT_GROUPS
 local api, if_nil = vim.api, vim.F.if_nil
 
 -- Most of this is taken straight from vim.diagnostic.open_float,
 -- with some tweaks to remove some unnecessary parts
 
 local highlight_map = {
-  [vim.diagnostic.severity.ERROR] = 'DiagnosticFloatingError',
-  [vim.diagnostic.severity.WARN] = 'DiagnosticFloatingWarn',
-  [vim.diagnostic.severity.INFO] = 'DiagnosticFloatingInfo',
-  [vim.diagnostic.severity.HINT] = 'DiagnosticFloatingHint',
+  [vim.diagnostic.severity.ERROR] = highlights.HoverFloatingError,
+  [vim.diagnostic.severity.WARN] = highlights.HoverFloatingWarn,
+  [vim.diagnostic.severity.INFO] = highlights.HoverFloatingInfo,
+  [vim.diagnostic.severity.HINT] = highlights.HoverFloatingHint,
 }
 
 --- @return vim.diagnostic.Opts.Float
@@ -146,18 +147,18 @@ local function execute(opts, done)
   end
 
   local lines = {} --- @type string[]
-  local highlights = {} --- @type table[]
+  local _highlights = {} --- @type table[]
 
   for i, diagnostic in ipairs(diagnostics) do
     if type(prefix_opt) == 'function' then
       --- @cast prefix_opt fun(...): string?, string?
       local prefix0, prefix_hl_group0 = prefix_opt(diagnostic, i, #diagnostics)
-      prefix, prefix_hl_group = prefix0 or '', prefix_hl_group0 or 'NormalFloat'
+      prefix, prefix_hl_group = prefix0 or '', prefix_hl_group0 or highlights.HoverWindow
     end
     if type(suffix_opt) == 'function' then
       --- @cast suffix_opt fun(...): string?, string?
       local suffix0, suffix_hl_group0 = suffix_opt(diagnostic, i, #diagnostics)
-      suffix, suffix_hl_group = suffix0 or '', suffix_hl_group0 or 'NormalFloat'
+      suffix, suffix_hl_group = suffix0 or '', suffix_hl_group0 or highlights.HoverWindow
     end
     --- @type string?
     local hiname = highlight_map[assert(diagnostic.severity)]
@@ -170,7 +171,7 @@ local function execute(opts, done)
       local pre = j == 1 and prefix or string.rep(' ', #prefix)
       local suf = j == #message_lines and suffix or ''
       table.insert(lines, pre .. message_lines[j] .. suf)
-      table.insert(highlights, {
+      table.insert(_highlights, {
         hlname = hiname,
         prefix = {
           length = j == 1 and #prefix or 0,
@@ -187,7 +188,7 @@ local function execute(opts, done)
   local float_bufnr = api.nvim_create_buf(false, true)
   api.nvim_buf_set_lines(float_bufnr, 0, -1, true, lines)
 
-  for i, hl in ipairs(highlights) do
+  for i, hl in ipairs(_highlights) do
     local line = lines[i]
     local prefix_len = hl.prefix and hl.prefix.length or 0
     local suffix_len = hl.suffix and hl.suffix.length or 0

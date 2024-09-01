@@ -73,6 +73,21 @@ end)
 }
 ```
 
+## Appearance
+
+The appearance of the hover window can be customized with the following
+highlight groups:
+
+* `HoverWindow` (defaults to: `NormalFloat`)
+* `HoverBorder` (defaults to: `FloatBorder`)
+* `HoverSourceLine` (defaults to: `TabLine`)
+* `HoverActiveSource` (defaults to: `TabLineSel`)
+* `HoverInactiveSource` (defaults to: `TabLineFill`)
+* `HoverFloatingError` (defaults to: `DiagnosticFloatingError`)
+* `HoverFloatingWarn` (defaults to: `DiagnosticFloatingWarn`)
+* `HoverFloatingInfo` (defaults to: `DiagnosticFloatingInfo`)
+* `HoverFloatingHint` (defaults to: `DiagnosticFloatingHint`)
+
 ## Built in Providers
 
 ### LSP

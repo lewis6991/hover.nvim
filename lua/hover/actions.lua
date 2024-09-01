@@ -4,6 +4,7 @@ local npcall = vim.F.npcall
 local has_winbar = vim.fn.has('nvim-0.8') == 1
 
 local async = require('hover.async')
+local highlights = require('hover.highlights').HIGHLIGHT_GROUPS
 
 local providers = require('hover.providers').providers
 local get_config = require('hover.config').get
@@ -35,9 +36,9 @@ local function add_title(bufnr, winnr, active_provider_id)
 
   for _, p in ipairs(providers) do
     if is_enabled(p, bufnr) then
-      local hl = p.id == active_provider_id and 'TabLineSel' or 'TabLineFill'
-      title[#title+1] = string.format('%%#%s# %s ', hl, p.name)
-      title[#title+1] = '%#Normal# '
+      local hl = p.id == active_provider_id and highlights.HoverActiveSource or highlights.HoverInactiveSource
+      title[#title + 1] = string.format('%%#%s# %s ', hl, p.name)
+      title[#title + 1] = '%#' .. highlights.HoverSourceLine .. '# '
       winbar_length = winbar_length + #p.name + 2 -- + 2 for whitespace padding
     end
   end
