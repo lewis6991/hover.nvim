@@ -8,6 +8,7 @@ end
 
 ---@param result string|nil
 ---@param stderr string|nil
+---@return sintrg[]?
 local function process(result, stderr)
   if result == nil then
     vim.notify(vim.trim(stderr or "(Unknown error)"), vim.log.levels.ERROR, { title = "hover.nvim (gh)" })
@@ -39,7 +40,7 @@ local function process(result, stderr)
   return lines
 end
 
-local execute = async.void(function(opts, done)
+local execute = async.void(function(_opts, done)
   local bufnr = api.nvim_get_current_buf()
   local cwd = fn.fnamemodify(api.nvim_buf_get_name(bufnr), ':p:h')
   local id = fn.expand('<cword>')

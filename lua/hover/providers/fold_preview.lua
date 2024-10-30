@@ -4,7 +4,7 @@ local api = vim.api
 local hover = require("hover")
 local config = require("hover.config").get()
 
-local border_shift = {}
+local border_shift = {} --- @type integer[]
 
 local function set_border_shift(border)
   if type(border) == "string" then
@@ -28,13 +28,10 @@ set_border_shift(config.preview_opts.border)
 
 hover.register({
   name = "Fold Preview",
-  --- @param bufnr integer
-  enabled = function(bufnr)
+  enabled = function()
     return fn.foldclosed(fn.line(".")) ~= -1
   end,
-  --- @param opts Hover.Options
-  --- @param done fun(result: any)
-  execute = function(opts, done)
+  execute = function(_opts, done)
     local cur_line = fn.line(".")
     local fold_start = fn.foldclosed(cur_line)
     local fold_end = fn.foldclosedend(cur_line)
@@ -42,7 +39,6 @@ hover.register({
     local cur_win = api.nvim_get_current_win()
     local cur_bufnr = api.nvim_win_get_buf(cur_win)
 
-    local fold_size = fold_end - fold_start + 1
     local folded_lines = api.nvim_buf_get_lines(cur_bufnr, fold_start - 1, fold_end, true)
 
     local blank_chars = folded_lines[1]:match("^%s+") or ""

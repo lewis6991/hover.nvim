@@ -256,7 +256,7 @@ function M.hover_switch(direction, opts)
   local bufnr = api.nvim_get_current_buf()
   local provider_count = 0
   local provider_idx = 0
-  local active_providers = {}
+  local active_providers = {} --- @type table<integer,integer>
   local hover_win = vim.b[bufnr].hover_preview
   local current_provider =
     hover_win and
@@ -294,6 +294,8 @@ function M.hover_select(opts)
   local bufnr = opts and opts.bufnr or api.nvim_get_current_buf()
 
   vim.ui.select(
+    --- @param provider Hover.Provider
+    --- @return boolean
     vim.tbl_filter(function(provider) return is_enabled(provider, bufnr) end, providers),
     {
       prompt = 'Select hover:',

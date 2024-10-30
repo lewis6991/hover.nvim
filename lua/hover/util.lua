@@ -73,13 +73,13 @@ local default_border = {
 
 --- @param width integer
 --- @param height integer
---- @param opts vim.api.keyset.float_config
---- @return vim.api.keyset.float_config
+--- @param opts vim.api.keyset.win_config
+--- @return vim.api.keyset.win_config
 local function make_floating_popup_options(width, height, opts)
   opts = opts or {}
 
   local anchor = ''
-  local row, col
+  local row, col --- @type integer,integer
 
   local lines_above = vim.fn.winline() - 1
   local lines_below = vim.fn.winheight(0) - lines_above
@@ -180,7 +180,7 @@ local function make_floating_popup_size(contents, opts)
   local wrap_at    = opts._wrap_at
   local max_width  = opts.max_width
   local max_height = opts.max_height
-  local line_widths = {}
+  local line_widths = {} --- @type table<integer,integer>
 
   if not width then
     width = 1 -- not zero, avoid modulo by zero if content is empty
