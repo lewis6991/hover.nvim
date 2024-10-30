@@ -1,6 +1,6 @@
 local async = require('hover.async')
 
-local M  = {}
+local M = {}
 
 --- @class Hover.Options
 --- @field bufnr integer
@@ -27,8 +27,13 @@ local id_cnt = 0
 --- @param provider Hover.RegisterProvider
 function M.register(provider)
   if not provider.execute or type(provider.execute) ~= 'function' then
-    vim.notify(string.format('error: hover provider %s does not provide an execute function',
-      provider.name or 'NA'), vim.log.levels.ERROR)
+    vim.notify(
+      string.format(
+        'error: hover provider %s does not provide an execute function',
+        provider.name or 'NA'
+      ),
+      vim.log.levels.ERROR
+    )
     return
   end
 
@@ -46,7 +51,7 @@ function M.register(provider)
       end
     end
   end
-  providers[#providers+1] = provider
+  providers[#providers + 1] = provider
 end
 
 return M

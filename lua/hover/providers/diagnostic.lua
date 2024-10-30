@@ -203,12 +203,12 @@ local function execute(opts, done)
     end
   end
 
-  done { bufnr = float_bufnr }
+  done({ bufnr = float_bufnr })
 end
 
-require('hover').register {
+require('hover').register({
   name = 'Diagnostics',
   priority = 1001, -- above lsp
   enabled = enabled,
   execute = execute,
-}
+})

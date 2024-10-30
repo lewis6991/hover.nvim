@@ -11,14 +11,18 @@ end
 ---@return sintrg[]?
 local function process(result, stderr)
   if result == nil then
-    vim.notify(vim.trim(stderr or "(Unknown error)"), vim.log.levels.ERROR, { title = "hover.nvim (gh)" })
+    vim.notify(
+      vim.trim(stderr or '(Unknown error)'),
+      vim.log.levels.ERROR,
+      { title = 'hover.nvim (gh)' }
+    )
     return
   end
 
   local ok, json = pcall(vim.json.decode, result)
   if not ok then
     async.scheduler()
-    vim.notify("Failed to parse gh result: " .. json, vim.log.levels.ERROR)
+    vim.notify('Failed to parse gh result: ' .. json, vim.log.levels.ERROR)
     return
   end
 
@@ -30,11 +34,11 @@ local function process(result, stderr)
     string.format('State: %s', json.state),
     string.format('Created: %s', json.createdAt),
     string.format('Last updated: %s', json.updatedAt),
-    ''
+    '',
   }
 
   for _, l in ipairs(vim.split(json.body, '\r?\n')) do
-    lines[#lines+1] = l
+    lines[#lines + 1] = l
   end
 
   return lines
@@ -56,17 +60,29 @@ local execute = async.void(function(_opts, done)
 
   local repo, num = word:match('([%w-]+/[%w%.-_]+)#(%d+)')
   if repo then
-    output, stderr = job {
-      'gh', 'issue', 'view', '--json', fields, num, '-R', repo,
-      cwd = cwd
-    }
+    output, stderr = job({
+      'gh',
+      'issue',
+      'view',
+      '--json',
+      fields,
+      num,
+      '-R',
+      repo,
+      cwd = cwd,
+    })
   else
     num = word:match('#(%d+)')
     if num then
-      output, stderr = job {
-        'gh', 'issue', 'view', '--json', fields, id,
-        cwd = cwd
-      }
+      output, stderr = job({
+        'gh',
+        'issue',
+        'view',
+        '--json',
+        fields,
+        id,
+        cwd = cwd,
+      })
     else
       done(false)
       return
@@ -74,12 +90,12 @@ local execute = async.void(function(_opts, done)
   end
 
   local results = process(output, stderr)
-  done(results and {lines=results, filetype="markdown"})
+  done(results and { lines = results, filetype = 'markdown' })
 end)
 
-require('hover').register {
+require('hover').register({
   name = 'Github',
   priority = 200,
   enabled = enabled,
   execute = execute,
-}
+})

@@ -22,10 +22,10 @@ local function process(result)
   }
 
   for _, def in ipairs(json.meanings[1].definitions) do
-    lines[#lines+1] = ''
-    lines[#lines+1] = def.definition
+    lines[#lines + 1] = ''
+    lines[#lines + 1] = def.definition
     if def.example then
-      lines[#lines+1] = 'Example: '..def.example
+      lines[#lines + 1] = 'Example: ' .. def.example
     end
   end
 
@@ -41,20 +41,21 @@ local execute = async.void(function(_opts, done)
     local job = require('hover.async.job').job
 
     ---@type string[]
-    local output = job {
-      'curl', 'https://api.dictionaryapi.dev/api/v2/entries/en/'..word
-    }
+    local output = job({
+      'curl',
+      'https://api.dictionaryapi.dev/api/v2/entries/en/' .. word,
+    })
 
-    local results = process(output) or {'no definition for '..word}
+    local results = process(output) or { 'no definition for ' .. word }
     cache[word] = results
   end
 
-  done({lines=cache[word], filetype="markdown"})
+  done({ lines = cache[word], filetype = 'markdown' })
 end)
 
-require('hover').register {
+require('hover').register({
   name = 'Dictionary',
   priority = 100,
   enabled = enabled,
   execute = execute,
-}
+})

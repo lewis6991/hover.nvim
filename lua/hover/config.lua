@@ -4,7 +4,7 @@ local M = {}
 --- @field init fun()
 local default_config = {
   preview_opts = {
-    border = 'single'
+    border = 'single',
   },
   preview_window = false,
   title = true,

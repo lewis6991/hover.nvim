@@ -6,20 +6,20 @@ local async_thread = {
 }
 
 function async_thread.inside()
-  local id = string.format("%p", co.running())
+  local id = string.format('%p', co.running())
   return async_thread.threads[id]
 end
 
 function async_thread.create(fn)
   local thread = co.create(fn)
-  local id = string.format("%p", thread)
+  local id = string.format('%p', thread)
   async_thread.threads[id] = true
   return thread
 end
 
 function async_thread.finished(x)
   if co.status(x) == 'dead' then
-    local id = string.format("%p", x)
+    local id = string.format('%p', x)
     async_thread.threads[id] = nil
     return true
   end
@@ -34,15 +34,20 @@ local function execute(async_fn, ...)
     local stat, err_or_fn, nargs = unpack(ret)
 
     if not stat then
-      error(string.format("The coroutine failed with this message: %s\n%s",
-        err_or_fn, debug.traceback(thread)))
+      error(
+        string.format(
+          'The coroutine failed with this message: %s\n%s',
+          err_or_fn,
+          debug.traceback(thread)
+        )
+      )
     end
 
     if async_thread.finished(thread) then
       return
     end
 
-    assert(type(err_or_fn) == "function", "type error :: expected func")
+    assert(type(err_or_fn) == 'function', 'type error :: expected func')
 
     local ret_fn = err_or_fn
     local args = { select(4, unpack(ret)) }

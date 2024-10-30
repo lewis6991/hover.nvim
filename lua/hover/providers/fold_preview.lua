@@ -1,38 +1,38 @@
 local fn = vim.fn
 local api = vim.api
 
-local hover = require("hover")
-local config = require("hover.config").get()
+local hover = require('hover')
+local config = require('hover.config').get()
 
 local border_shift = {} --- @type integer[]
 
 local function set_border_shift(border)
-  if type(border) == "string" then
-    if border == "none" then
+  if type(border) == 'string' then
+    if border == 'none' then
       border_shift = { 0, 0, 0, 0 }
-    elseif vim.tbl_contains({ "single", "double", "rounded", "solid" }, border) then
+    elseif vim.tbl_contains({ 'single', 'double', 'rounded', 'solid' }, border) then
       border_shift = { -1, -1, -1, -1 }
-    elseif border == "shadow" then
+    elseif border == 'shadow' then
       border_shift = { 0, -1, -1, 0 }
     end
-  elseif type(border) == "table" then
+  elseif type(border) == 'table' then
     for i = 1, 4 do
-      border_shift[i] = border[i * 2] == "" and 0 or -1
+      border_shift[i] = border[i * 2] == '' and 0 or -1
     end
   else
-    assert(false, "Invalid border type or value")
+    assert(false, 'Invalid border type or value')
   end
 end
 
 set_border_shift(config.preview_opts.border)
 
 hover.register({
-  name = "Fold Preview",
+  name = 'Fold Preview',
   enabled = function()
-    return fn.foldclosed(fn.line(".")) ~= -1
+    return fn.foldclosed(fn.line('.')) ~= -1
   end,
   execute = function(_opts, done)
-    local cur_line = fn.line(".")
+    local cur_line = fn.line('.')
     local fold_start = fn.foldclosed(cur_line)
     local fold_end = fn.foldclosedend(cur_line)
 
@@ -41,9 +41,9 @@ hover.register({
 
     local folded_lines = api.nvim_buf_get_lines(cur_bufnr, fold_start - 1, fold_end, true)
 
-    local blank_chars = folded_lines[1]:match("^%s+") or ""
+    local blank_chars = folded_lines[1]:match('^%s+') or ''
     local nbc = #blank_chars
-    local indent = #(blank_chars:gsub("\t", string.rep(" ", vim.bo[cur_bufnr].tabstop)))
+    local indent = #(blank_chars:gsub('\t', string.rep(' ', vim.bo[cur_bufnr].tabstop)))
 
     if nbc > 0 then
       for i, line in ipairs(folded_lines) do
@@ -51,7 +51,6 @@ hover.register({
         folded_lines[i] = line
       end
     end
-
 
     local bufnr = api.nvim_create_buf(false, true)
     api.nvim_buf_set_lines(bufnr, 0, 1, false, folded_lines)
@@ -74,7 +73,7 @@ hover.register({
       api.nvim_win_set_config(win, win_config)
     end
 
-    api.nvim_create_autocmd("BufWinEnter", {
+    api.nvim_create_autocmd('BufWinEnter', {
       buffer = bufnr,
       callback = function()
         update_win_config(api.nvim_get_current_win())

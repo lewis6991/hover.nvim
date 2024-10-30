@@ -45,15 +45,23 @@ end
 
 local function set_default_bufopts(buf)
   vim.bo[buf].modifiable = false
-  vim.bo[buf].buftype = "nofile"
+  vim.bo[buf].buftype = 'nofile'
   api.nvim_buf_set_keymap(
-    buf, "n", "<CR>", "<Cmd>lua require('dap.ui').trigger_actions({ mode = 'first' })<CR>", {})
+    buf,
+    'n',
+    '<CR>',
+    "<Cmd>lua require('dap.ui').trigger_actions({ mode = 'first' })<CR>",
+    {}
+  )
+  api.nvim_buf_set_keymap(buf, 'n', 'a', "<Cmd>lua require('dap.ui').trigger_actions()<CR>", {})
+  api.nvim_buf_set_keymap(buf, 'n', 'o', "<Cmd>lua require('dap.ui').trigger_actions()<CR>", {})
   api.nvim_buf_set_keymap(
-    buf, "n", "a", "<Cmd>lua require('dap.ui').trigger_actions()<CR>", {})
-  api.nvim_buf_set_keymap(
-    buf, "n", "o", "<Cmd>lua require('dap.ui').trigger_actions()<CR>", {})
-  api.nvim_buf_set_keymap(
-    buf, "n", "<2-LeftMouse>", "<Cmd>lua require('dap.ui').trigger_actions()<CR>", {})
+    buf,
+    'n',
+    '<2-LeftMouse>',
+    "<Cmd>lua require('dap.ui').trigger_actions()<CR>",
+    {}
+  )
 end
 
 local function new_buf()
@@ -62,7 +70,7 @@ local function new_buf()
   return buf
 end
 
-hover.register {
+hover.register({
   name = 'DAP',
   enabled = function()
     local has_dap, dap = pcall(require, 'dap')
@@ -72,14 +80,14 @@ hover.register {
     local buf = new_buf()
     local layer = resizing_layer(buf)
     local fake_view = {
-      layer = function ()
+      layer = function()
         return layer
       end,
     }
     local expression = vim.fn.expand('<cexpr>')
     local widgets = require('dap.ui.widgets')
     widgets.expression.render(fake_view, expression)
-    done { bufnr = buf }
+    done({ bufnr = buf })
   end,
   priority = 1002, -- above lsp and diagnostics
-}
+})

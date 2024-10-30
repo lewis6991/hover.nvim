@@ -24,8 +24,7 @@ end
 --- @param active_provider_id integer
 local function add_title(bufnr, winnr, active_provider_id)
   if not has_winbar then
-    vim.notify_once('hover.nvim: `config.title` requires neovim >= 0.8.0',
-                    vim.log.levels.WARN)
+    vim.notify_once('hover.nvim: `config.title` requires neovim >= 0.8.0', vim.log.levels.WARN)
     return
   end
 
@@ -36,8 +35,8 @@ local function add_title(bufnr, winnr, active_provider_id)
   for _, p in ipairs(providers) do
     if is_enabled(p, bufnr) then
       local hl = p.id == active_provider_id and 'TabLineSel' or 'TabLineFill'
-      title[#title+1] = string.format('%%#%s# %s ', hl, p.name)
-      title[#title+1] = '%#Normal# '
+      title[#title + 1] = string.format('%%#%s# %s ', hl, p.name)
+      title[#title + 1] = '%#Normal# '
       winbar_length = winbar_length + #p.name + 2 -- + 2 for whitespace padding
     end
   end
@@ -45,7 +44,7 @@ local function add_title(bufnr, winnr, active_provider_id)
   local config = api.nvim_win_get_config(winnr)
   api.nvim_win_set_config(winnr, {
     height = config.height + 1,
-    width = math.max(config.width, winbar_length + 2) -- + 2 for border
+    width = math.max(config.width, winbar_length + 2), -- + 2 for border
   })
   vim.wo[winnr].winbar = table.concat(title, '')
 end
@@ -120,8 +119,11 @@ local function send_to_preview_window()
   api.nvim_win_set_buf(pwin, hover_bufnr)
   -- Unload the empty buffer created along with preview window
   local bufexist, buflinecnt = pcall(api.nvim_buf_line_count, pwin_prev_buf)
-  if bufexist and buflinecnt == 1 and
-    api.nvim_buf_get_lines(pwin_prev_buf, 0, -1, false)[1] == "" then
+  if
+    bufexist
+    and buflinecnt == 1
+    and api.nvim_buf_get_lines(pwin_prev_buf, 0, -1, false)[1] == ''
+  then
     api.nvim_buf_delete(pwin_prev_buf, {})
   end
   vim.wo[pwin].winbar = vim.wo[hover_win].winbar
@@ -219,10 +221,10 @@ M.hover = async.void(function(opts)
   local bufnr = opts and opts.bufnr or api.nvim_get_current_buf()
 
   local hover_win = vim.b[bufnr].hover_preview
-  local current_provider =
-    hover_win and
-    api.nvim_win_is_valid(hover_win) and
-    vim.w[hover_win].hover_provider or nil
+  local current_provider = hover_win
+      and api.nvim_win_is_valid(hover_win)
+      and vim.w[hover_win].hover_provider
+    or nil
 
   --- If hover is open then set use_provider to false until we cycle to the
   --- next available provider.
@@ -258,10 +260,10 @@ function M.hover_switch(direction, opts)
   local provider_idx = 0
   local active_providers = {} --- @type table<integer,integer>
   local hover_win = vim.b[bufnr].hover_preview
-  local current_provider =
-    hover_win and
-    api.nvim_win_is_valid(hover_win) and
-    vim.w[hover_win].hover_provider or nil
+  local current_provider = hover_win
+      and api.nvim_win_is_valid(hover_win)
+      and vim.w[hover_win].hover_provider
+    or nil
 
   for n, p in ipairs(providers) do
     if p.id == current_provider then
@@ -296,14 +298,16 @@ function M.hover_select(opts)
   vim.ui.select(
     --- @param provider Hover.Provider
     --- @return boolean
-    vim.tbl_filter(function(provider) return is_enabled(provider, bufnr) end, providers),
+    vim.tbl_filter(function(provider)
+      return is_enabled(provider, bufnr)
+    end, providers),
     {
       prompt = 'Select hover:',
       format_item = function(provider)
         return provider.name
-      end
+      end,
     },
-    function (provider)
+    function(provider)
       if provider then
         async.void(run_provider)(provider, opts)
       end
@@ -318,22 +322,30 @@ function M.hover_mouse()
 
   local config = get_config()
 
-  timer:start(config.mouse_delay, 0, vim.schedule_wrap(function()
-    local pos = vim.fn.getmousepos()
-    if pos.winid == 0 then return end
+  timer:start(
+    config.mouse_delay,
+    0,
+    vim.schedule_wrap(function()
+      local pos = vim.fn.getmousepos()
+      if pos.winid == 0 then
+        return
+      end
 
-    local buf = vim.fn.winbufnr(pos.winid)
-    if buf == -1 then return end
+      local buf = vim.fn.winbufnr(pos.winid)
+      if buf == -1 then
+        return
+      end
 
-    M.close(buf)
+      M.close(buf)
 
-    M.hover {
-      providers = config.mouse_providers,
-      relative = 'mouse',
-      pos = { pos.line, pos.column },
-      bufnr = buf
-    }
-  end))
+      M.hover({
+        providers = config.mouse_providers,
+        relative = 'mouse',
+        pos = { pos.line, pos.column },
+        bufnr = buf,
+      })
+    end)
+  )
 end
 
 return M

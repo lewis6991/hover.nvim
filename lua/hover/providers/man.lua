@@ -1,11 +1,15 @@
 local api = vim.api
 
-require('hover').register {
+require('hover').register({
   name = 'Man',
   priority = 150,
   enabled = function(bufnr)
     return vim.tbl_contains({
-      'c', 'sh', 'zsh', 'tcl', 'make',
+      'c',
+      'sh',
+      'zsh',
+      'tcl',
+      'make',
     }, vim.bo[bufnr].filetype)
   end,
   execute = function(opts, done)
@@ -21,7 +25,7 @@ require('hover').register {
     end)
 
     if not ok or api.nvim_buf_line_count(bufnr) <= 1 then
-      api.nvim_buf_delete(bufnr, {force = true})
+      api.nvim_buf_delete(bufnr, { force = true })
       done()
       return
     end
@@ -32,9 +36,9 @@ require('hover').register {
       once = true,
       callback = function()
         api.nvim_exec_autocmds('BufReadCmd', { pattern = uri })
-      end
+      end,
     })
 
-    done{ bufnr = bufnr }
-  end
-}
+    done({ bufnr = bufnr })
+  end,
+})
