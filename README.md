@@ -45,6 +45,7 @@ use {
                 -- require('hover.providers.diagnostic')
                 -- require('hover.providers.man')
                 -- require('hover.providers.dictionary')
+                -- require('hover.providers.highlight')
             end,
             preview_opts = {
                 border = 'single'
@@ -144,6 +145,11 @@ Priority: 150
 Definitions for valid words
 
 Priority: 100
+
+### Highlight
+`require('hover.providers.dap')`
+
+Highlight group preview using `vim.inspect_pos`
 
 ## Creating a hover provider
 
