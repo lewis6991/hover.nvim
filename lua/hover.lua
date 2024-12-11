@@ -30,7 +30,7 @@ function M.close(bufnr)
   require('hover.actions').close(bufnr)
 end
 
----@param user_config Hover.Config
+---@param user_config Hover.UserConfig
 function M.setup(user_config)
   require('hover.config').set(user_config)
 end

@@ -1,7 +1,7 @@
 local M = {}
 
 --- @class Hover.Config
---- @field init fun()
+--- @field init? fun()
 local default_config = {
   preview_opts = {
     border = 'single',
@@ -12,10 +12,17 @@ local default_config = {
   mouse_delay = 1000,
 }
 
+--- @class Hover.UserConfig: Hover.Config
+--- @field title? boolean
+--- @field mouse_providers? string[]
+--- @field mouse_delay? integer
+--- @field preview_opts? table
+--- @field preview_window? boolean
+
 --- @type Hover.Config
 local config
 
---- @param user_config Hover.Config
+--- @param user_config Hover.UserConfig
 function M.set(user_config)
   config = vim.tbl_deep_extend('force', default_config, user_config)
 end
