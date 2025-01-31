@@ -258,6 +258,9 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   local floating_bufnr = bufnr or api.nvim_create_buf(false, true)
   local do_stylize = syntax == 'markdown' and opts.stylize_markdown
 
+  -- Compute size of float needed to show (wrapped) lines
+  opts._wrap_at = opts.wrap and api.nvim_win_get_width(0) or nil
+
   -- if contents given, always set buf lines
   -- if no bufnr, contents is required
   if contents or not bufnr then
@@ -266,7 +269,11 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
 
     if do_stylize then
       -- applies the syntax and sets the lines to the buffer
-      contents = vim.lsp.util.stylize_markdown(floating_bufnr, contents, opts)
+      local width, _ = make_floating_popup_size(contents, opts)
+      contents = vim.lsp.util._normalize_markdown(contents, { width = width })
+      vim.bo[floating_bufnr].filetype = 'markdown'
+      vim.treesitter.start(floating_bufnr)
+      api.nvim_buf_set_lines(floating_bufnr, 0, -1, false, contents)
     else
       if syntax then
         vim.bo[floating_bufnr].syntax = syntax
@@ -290,10 +297,7 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
     end
   end
 
-  -- Compute size of float needed to show (wrapped) lines
-  opts._wrap_at = opts.wrap and api.nvim_win_get_width(0) or nil
   local width, height = make_floating_popup_size(contents, opts)
-
   local float_option = make_floating_popup_options(width, height, opts)
   local hover_winid = api.nvim_open_win(floating_bufnr, false, float_option)
 
