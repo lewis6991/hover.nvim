@@ -275,8 +275,6 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
       -- applies the syntax and sets the lines to the buffer
       local width, _ = make_floating_popup_size(contents, opts)
       contents = vim.lsp.util._normalize_markdown(contents, { width = width })
-      vim.bo[floating_bufnr].filetype = 'markdown'
-      vim.treesitter.start(floating_bufnr)
       api.nvim_buf_set_lines(floating_bufnr, 0, -1, false, contents)
     else
       if syntax then
@@ -305,11 +303,6 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   local float_opts = make_floating_popup_options(width, height, opts)
   local hover_winid = api.nvim_open_win(floating_bufnr, false, float_opts)
 
-  if do_stylize then
-    vim.wo[hover_winid].conceallevel = 2
-    vim.wo[hover_winid].concealcursor = 'n'
-  end
-
   -- disable folding
   vim.wo[hover_winid].foldenable = false
   -- soft wrapping
@@ -328,6 +321,13 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
 
   vim.w[hover_winid].hover_preview = hover_winid
   vim.b[cbuf].hover_preview = hover_winid
+
+  if do_stylize then
+    vim.wo[hover_winid].conceallevel = 2
+    vim.wo[hover_winid].concealcursor = 'n'
+    vim.bo[floating_bufnr].filetype = 'markdown'
+    vim.treesitter.start(floating_bufnr)
+  end
 
   return hover_winid
 end
