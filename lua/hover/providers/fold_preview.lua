@@ -28,9 +28,9 @@ set_border_shift(config.preview_opts.border)
 
 hover.register({
   name = 'Fold Preview',
-  enabled = function()
-    local mousepos = fn.getmousepos()
-    local lnum = mousepos.line
+  enabled = function(_bufnr, opts)
+    local pos = opts and opts.pos or api.nvim_win_get_cursor(0)
+    local lnum = pos[1]
     return fn.foldclosed(lnum) ~= -1
   end,
   execute = function(opts, done)

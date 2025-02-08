@@ -71,11 +71,12 @@ local function filter_diagnostics(diagnostics, lnum, col, bufnr)
 end
 
 --- @param bufnr integer
+--- @param opts? Hover.Options
 --- @return boolean
-local function enabled(bufnr)
+local function enabled(bufnr, opts)
   local buffer_diagnostics = vim.diagnostic.get(bufnr)
-  local pos = vim.fn.getmousepos()
-  local lnum, col = pos.line - 1, pos.column
+  local pos = opts and opts.pos or api.nvim_win_get_cursor(0)
+  local lnum, col = pos[1] - 1, pos[2]
   local diagnostics = filter_diagnostics(buffer_diagnostics, lnum, col, bufnr)
   return #diagnostics ~= 0
 end
