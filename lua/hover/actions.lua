@@ -14,15 +14,21 @@ local initialised = false
 
 --- @param provider Hover.Provider
 --- @param bufnr integer
+--- @param opts? Hover.Options
 --- @return boolean
-local function is_enabled(provider, bufnr)
-  return provider.enabled == nil or provider.enabled(bufnr)
+local function is_enabled(provider, bufnr, opts)
+  opts = opts or {}
+  opts.bufnr = opts.bufnr or bufnr
+  opts.pos = opts.pos or api.nvim_win_get_cursor(0)
+
+  return provider.enabled == nil or provider.enabled(opts.bufnr, opts)
 end
 
 --- @param bufnr integer
 --- @param winnr integer
 --- @param active_provider_id integer
-local function add_title(bufnr, winnr, active_provider_id)
+--- @param opts Hover.Options
+local function add_title(bufnr, winnr, active_provider_id, opts)
   if not has_winbar then
     vim.notify_once('hover.nvim: `config.title` requires neovim >= 0.8.0', vim.log.levels.WARN)
     return
@@ -33,7 +39,7 @@ local function add_title(bufnr, winnr, active_provider_id)
   local winbar_length = 0
 
   for _, p in ipairs(providers) do
-    if is_enabled(p, bufnr) then
+    if is_enabled(p, bufnr, opts) then
       local hl = p.id == active_provider_id and 'TabLineSel' or 'TabLineFill'
       title[#title + 1] = string.format('%%#%s# %s ', hl, p.name)
       title[#title + 1] = '%#Normal# '
@@ -156,7 +162,7 @@ local function show_hover(bufnr, provider_id, config, result, opts)
   local winid = util.open_floating_preview(result.lines, result.bufnr, result.filetype, opts)
 
   if config.title then
-    add_title(bufnr, winid, provider_id)
+    add_title(bufnr, winid, provider_id, opts)
   end
   vim.w[winid].hover_provider = provider_id
 
@@ -233,7 +239,7 @@ M.hover = async.void(function(opts)
   for _, provider in ipairs(providers) do
     if not opts or not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
       async.scheduler()
-      if use_provider and is_enabled(provider, bufnr) and run_provider(provider, opts) then
+      if use_provider and is_enabled(provider, bufnr, opts) and run_provider(provider, opts) then
         return
       end
       if provider.id == current_provider then
@@ -245,7 +251,7 @@ M.hover = async.void(function(opts)
   for _, provider in ipairs(providers) do
     if not opts or not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
       async.scheduler()
-      if is_enabled(provider, bufnr) and run_provider(provider, opts) then
+      if is_enabled(provider, bufnr, opts) and run_provider(provider, opts) then
         return
       end
     end
@@ -269,7 +275,7 @@ function M.hover_switch(direction, opts)
     if p.id == current_provider then
       provider_idx = provider_count
     end
-    if is_enabled(p, bufnr) then
+    if is_enabled(p, bufnr, opts) then
       active_providers[provider_count] = n
       provider_count = provider_count + 1
     end
@@ -299,7 +305,7 @@ function M.hover_select(opts)
     --- @param provider Hover.Provider
     --- @return boolean
     vim.tbl_filter(function(provider)
-      return is_enabled(provider, bufnr)
+      return is_enabled(provider, bufnr, opts)
     end, providers),
     {
       prompt = 'Select hover:',
