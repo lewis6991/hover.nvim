@@ -178,7 +178,7 @@ local function run_provider(provider, popts)
 
   popts = popts or {}
   popts.bufnr = popts.bufnr or api.nvim_get_current_buf()
-  popts.pos = popts.pos or vim.fn.getmousepos()
+  popts.pos = popts.pos or api.nvim_win_get_cursor(0)
 
   opts.relative = popts.relative
 
