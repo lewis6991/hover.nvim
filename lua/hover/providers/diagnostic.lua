@@ -39,15 +39,14 @@ local function count_sources(diagnostics)
 end
 
 --- @param diagnostics vim.Diagnostic[]
+--- @param lnum integer
+--- @param col integer
 --- @param bufnr integer
 --- @return vim.Diagnostic[]
-local function filter_diagnostics(diagnostics, bufnr)
+local function filter_diagnostics(diagnostics, lnum, col, bufnr)
   local float_opts = get_float_opts()
   local scope = float_opts.scope or 'line'
 
-  local pos = api.nvim_win_get_cursor(0)
-  local lnum = pos[1] - 1
-  local col = pos[2]
   if scope == 'line' then
     --- @param d vim.Diagnostic
     --- @return boolean
@@ -75,7 +74,9 @@ end
 --- @return boolean
 local function enabled(bufnr)
   local buffer_diagnostics = vim.diagnostic.get(bufnr)
-  local diagnostics = filter_diagnostics(buffer_diagnostics, bufnr)
+  local pos = vim.fn.getmousepos()
+  local lnum, col = pos.line - 1, pos.column
+  local diagnostics = filter_diagnostics(buffer_diagnostics, lnum, col, bufnr)
   return #diagnostics ~= 0
 end
 
@@ -83,7 +84,8 @@ end
 --- @param done fun(result?: Hover.Result)
 local function execute(opts, done)
   local buffer_diagnostics = vim.diagnostic.get(opts.bufnr)
-  local diagnostics = filter_diagnostics(buffer_diagnostics, opts.bufnr)
+  local lnum, col = opts.pos[1] - 1, opts.pos[2]
+  local diagnostics = filter_diagnostics(buffer_diagnostics, lnum, col, opts.bufnr)
 
   local float_opts = get_float_opts()
 
