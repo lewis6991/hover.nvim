@@ -30,11 +30,11 @@ hover.register({
   name = 'Fold Preview',
   enabled = function()
     local mousepos = fn.getmousepos()
-    local lnum = mousepos.line - 1
+    local lnum = mousepos.line
     return fn.foldclosed(lnum) ~= -1
   end,
   execute = function(opts, done)
-    local cur_line = opts.pos[1] - 1
+    local cur_line = opts.pos[1]
     local fold_start = fn.foldclosed(cur_line)
     local fold_end = fn.foldclosedend(cur_line)
 
