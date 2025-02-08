@@ -28,18 +28,27 @@ set_border_shift(config.preview_opts.border)
 
 hover.register({
   name = 'Fold Preview',
-  enabled = function(_bufnr, opts)
+  enabled = function(bufnr, opts)
     local pos = opts and opts.pos or api.nvim_win_get_cursor(0)
     local lnum = pos[1]
-    return fn.foldclosed(lnum) ~= -1
+
+    return vim.api.nvim_buf_call(bufnr, function()
+      return fn.foldclosed(lnum) ~= -1
+    end)
   end,
   execute = function(opts, done)
-    local cur_line = opts.pos[1]
-    local fold_start = fn.foldclosed(cur_line)
-    local fold_end = fn.foldclosedend(cur_line)
+    local cur_bufnr = opts and opts.bufnr or api.nvim_get_current_buf()
+    local cur_pos = opts and opts.pos or api.nvim_win_get_cursor(0)
+    local cur_line = cur_pos[1]
 
-    local cur_win = api.nvim_get_current_win()
-    local cur_bufnr = api.nvim_win_get_buf(cur_win)
+    local fold_bounds = vim.api.nvim_buf_call(cur_bufnr, function()
+      return { fn.foldclosed(cur_line), fn.foldclosedend(cur_line) }
+    end)
+
+    --- @cast fold_bounds {[1]: integer, [2]: integer}
+
+    local fold_start = fold_bounds[1]
+    local fold_end = fold_bounds[2]
 
     local folded_lines = api.nvim_buf_get_lines(cur_bufnr, fold_start - 1, fold_end, true)
 
