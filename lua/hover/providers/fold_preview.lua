@@ -29,10 +29,12 @@ set_border_shift(config.preview_opts.border)
 hover.register({
   name = 'Fold Preview',
   enabled = function()
-    return fn.foldclosed(fn.line('.')) ~= -1
+    local mousepos = fn.getmousepos()
+    local lnum = mousepos.line - 1
+    return fn.foldclosed(lnum) ~= -1
   end,
-  execute = function(_opts, done)
-    local cur_line = fn.line('.')
+  execute = function(opts, done)
+    local cur_line = opts.pos[1] - 1
     local fold_start = fn.foldclosed(cur_line)
     local fold_end = fn.foldclosedend(cur_line)
 
