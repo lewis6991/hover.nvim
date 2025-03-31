@@ -1,17 +1,25 @@
 local get_clients = vim.lsp.get_clients
 
---- @param line string?
---- @param index integer
---- @param encoding? 'utf-8' | 'utf-16' | 'utf-32'
+local nvim11 = vim.fn.has('nvim-0.11')
+
+--- @param line string
+--- @param encoding 'utf-8' | 'utf-16' | 'utf-32'
+--- @param index? integer
 --- @return integer
-local function str_utfindex(line, index, encoding)
-  if encoding == 'utf-8' or not line or #line < index then
-    return index
+local function str_utfindex010(line, encoding, index)
+  index = index or math.huge
+
+  if encoding == 'utf-8' or #line < index then
+    return #line
   end
 
+  --- @diagnostic disable-next-line: param-type-mismatch
   local col32, col16 = vim.str_utfindex(line, index)
+  --- @diagnostic disable-next-line: return-type-mismatch
   return encoding == 'utf-32' and col32 or col16
 end
+
+local str_utfindex = nvim11 and vim.str_utfindex or str_utfindex010
 
 --- @param bufnr integer
 --- @param method string
@@ -24,7 +32,10 @@ local function buf_request_all(bufnr, method, params_fn, handler)
   local remaining = #clients
 
   for _, client in ipairs(clients) do
-    client.request(method, params_fn(client), function(_, result)
+    -- use _request for 0.10 support
+    --- @diagnostic disable-next-line: undefined-field
+    local request = client._request or client.request
+    request(client, method, params_fn(client), function(_, result)
       remaining = remaining - 1
       results[client] = result
       if remaining == 0 then
@@ -40,20 +51,17 @@ end
 --- @return fun(client: vim.lsp.Client): table
 local function create_params(bufnr, row, col)
   return function(client)
-    local offset_encoding = client.offset_encoding
     local ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, row, row + 1, true)
 
     if not ok then
-      print(debug.traceback(string.format('ERROR: row %d is out of range: %s', row, lines)))
+      print(debug.traceback(('ERROR: row %d is out of range: %s'):format(row, lines)))
     end
-
-    local ccol = lines and str_utfindex(lines[1], col, offset_encoding) or col
 
     return {
       textDocument = { uri = vim.uri_from_bufnr(bufnr) },
       position = {
         line = row,
-        character = ccol,
+        character = str_utfindex(lines[1], client.offset_encoding, col)
       },
     }
   end

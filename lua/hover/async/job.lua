@@ -3,8 +3,8 @@ local async = require('hover.async')
 local M = {}
 
 ---@async
----@return string|nil stdout result
----@return string|nil stderr result
+---@return string? stdout result
+---@return string? stderr result
 M.job = async.wrap(function(obj, callback)
   ---@type string[]
   local stdout_data = {}

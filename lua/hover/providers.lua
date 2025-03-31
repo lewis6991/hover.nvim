@@ -11,7 +11,7 @@ local M = {}
 --- @class Hover.RegisterProvider
 --- @field priority integer
 --- @field name string
---- @field execute fun(opts?: Hover.Options, done: fun(result?: Hover.Result))
+--- @field execute fun(opts?: Hover.Options, done: fun(result?: false|Hover.Result))
 --- @field enabled fun(bufnr: integer): boolean
 
 --- @class Hover.Provider : Hover.RegisterProvider

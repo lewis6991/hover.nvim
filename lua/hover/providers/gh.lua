@@ -6,11 +6,11 @@ local function enabled()
   return fn.expand('<cWORD>'):match('#%d+') ~= nil
 end
 
----@param result string|nil
----@param stderr string|nil
----@return sintrg[]?
+---@param result string?
+---@param stderr string?
+---@return string[]?
 local function process(result, stderr)
-  if result == nil then
+  if not result then
     vim.notify(
       vim.trim(stderr or '(Unknown error)'),
       vim.log.levels.ERROR,
@@ -51,8 +51,8 @@ local execute = async.void(function(_opts, done)
 
   local word = fn.expand('<cWORD>')
 
-  local output ---@type string[]|nil
-  local stderr ---@type string[]|nil
+  local output ---@type string?
+  local stderr ---@type string?
 
   local fields = 'author,title,number,body,state,createdAt,updatedAt,url'
 

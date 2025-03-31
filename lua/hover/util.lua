@@ -76,24 +76,23 @@ local default_border = {
 --- @param opts vim.api.keyset.win_config
 --- @return vim.api.keyset.win_config
 local function make_floating_popup_options(width, height, opts)
-  opts = opts or {}
-
-  local anchor = ''
-  local row, col --- @type integer,integer
+  local anchor --- @type string
+  local row --- @type integer
 
   local lines_above = vim.fn.winline() - 1
   local lines_below = vim.fn.winheight(0) - lines_above
 
   if lines_above < lines_below then
-    anchor = anchor .. 'N'
+    anchor = 'N'
     height = math.min(lines_below, height)
     row = 1
   else
-    anchor = anchor .. 'S'
+    anchor = 'S'
     height = math.min(lines_above, height)
     row = 0
   end
 
+  local col --- @type integer
   if vim.fn.wincol() + width <= vim.o.columns then
     anchor = anchor .. 'W'
     col = 0
@@ -171,8 +170,13 @@ local function get_border_width(opts)
   return border_width(4 --[[right]]) + border_width(8 --[[left]])
 end
 
+--- @class Hover.float_config : vim.api.keyset.win_config
+--- @field _wrap_at? integer
+--- @field max_width? integer
+--- @field max_height? integer
+
 --- @param contents string[]
---- @param opts table
+--- @param opts Hover.float_config
 --- @return integer width
 --- @return integer height
 local function make_floating_popup_size(contents, opts)
@@ -294,8 +298,8 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   opts._wrap_at = opts.wrap and api.nvim_win_get_width(0) or nil
   local width, height = make_floating_popup_size(contents, opts)
 
-  local float_option = make_floating_popup_options(width, height, opts)
-  local hover_winid = api.nvim_open_win(floating_bufnr, false, float_option)
+  local float_opts = make_floating_popup_options(width, height, opts)
+  local hover_winid = api.nvim_open_win(floating_bufnr, false, float_opts)
 
   if do_stylize then
     vim.wo[hover_winid].conceallevel = 2

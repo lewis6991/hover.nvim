@@ -60,9 +60,10 @@ end
 
 local M = {}
 
----@param func function
+---@generic F
+---@param func F
 ---@param argc integer
----@return function
+---@return F
 function M.wrap(func, argc)
   ---@async
   return function(...)
@@ -82,6 +83,7 @@ function M.void(func)
   end
 end
 
+--- @type fun()
 M.scheduler = M.wrap(vim.schedule, 1)
 
 return M
