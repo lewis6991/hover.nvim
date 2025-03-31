@@ -7,10 +7,8 @@ local nvim11 = vim.fn.has('nvim-0.11')
 --- @param index? integer
 --- @return integer
 local function str_utfindex010(line, encoding, index)
-  index = index or math.huge
-
-  if encoding == 'utf-8' or #line < index then
-    return #line
+  if encoding == 'utf-8' then
+    return index or #line
   end
 
   --- @diagnostic disable-next-line: param-type-mismatch
@@ -57,11 +55,14 @@ local function create_params(bufnr, row, col)
       print(debug.traceback(('ERROR: row %d is out of range: %s'):format(row, lines)))
     end
 
+    local line = lines[1]
+    col = math.min(col, #line)
+
     return {
       textDocument = { uri = vim.uri_from_bufnr(bufnr) },
       position = {
         line = row,
-        character = str_utfindex(lines[1], client.offset_encoding, col)
+        character = str_utfindex(line, client.offset_encoding, col)
       },
     }
   end
