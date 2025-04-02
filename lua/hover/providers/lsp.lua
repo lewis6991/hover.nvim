@@ -56,7 +56,12 @@ local function create_params(bufnr, row, col)
     end
 
     local line = lines[1]
-    col = math.min(col, #line)
+	if line then
+		col = math.min(col, #line)
+	else
+		line = ""
+	end
+
 
     return {
       textDocument = { uri = vim.uri_from_bufnr(bufnr) },
