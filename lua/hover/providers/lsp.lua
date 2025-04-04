@@ -1,6 +1,6 @@
 local get_clients = vim.lsp.get_clients
 
-local nvim11 = vim.fn.has('nvim-0.11')
+local nvim11 = vim.fn.has('nvim-0.11') == 1
 
 --- @param line string
 --- @param encoding 'utf-8' | 'utf-16' | 'utf-32'
