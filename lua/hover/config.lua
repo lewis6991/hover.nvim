@@ -1,6 +1,7 @@
 local M = {}
 
 --- @class Hover.Config
+--- @field dev_mode? boolean
 --- @field init? fun()
 local default_config = {
   preview_opts = {

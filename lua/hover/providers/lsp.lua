@@ -56,6 +56,13 @@ local function create_params(bufnr, row, col)
     end
 
     local line = lines[1]
+    if not line then
+      local config = require('hover.config').get()
+      if config.dev_mode then
+        error(string.format('ERROR: row %d is out of range (col=%d)', row, col))
+      end
+      line = ''
+    end
     col = math.min(col, #line)
 
     return {
