@@ -238,6 +238,98 @@ local function make_floating_popup_size(contents, opts)
   return width, height
 end
 
+---Returns true if the line is empty or only contains whitespace.
+---@param line string
+---@return boolean
+local function is_blank_line(line)
+  return line and line:match('^%s*$')
+end
+
+---Returns true if the line corresponds to a Markdown thematic break.
+---@param line string
+---@return boolean
+local function is_separator_line(line)
+  return line and line:match('^ ? ? ?%-%-%-+%s*$')
+end
+
+---Replaces separator lines by the given divider and removing surrounding blank lines.
+---@param contents string[]
+---@param divider string
+---@return string[]
+local function replace_separators(contents, divider)
+  local trimmed = {}
+  local l = 1
+  while l <= #contents do
+    local line = contents[l]
+    if is_separator_line(line) then
+      if l > 1 and is_blank_line(contents[l - 1]) then
+        table.remove(trimmed)
+      end
+      table.insert(trimmed, divider)
+      if is_blank_line(contents[l + 1]) then
+        l = l + 1
+      end
+    else
+      table.insert(trimmed, line)
+    end
+    l = l + 1
+  end
+
+  return trimmed
+end
+
+---Collapses successive blank lines in the input table into a single one.
+---@param contents string[]
+---@return string[]
+local function collapse_blank_lines(contents)
+  local collapsed = {}
+  local l = 1
+  while l <= #contents do
+    local line = contents[l]
+    if is_blank_line(line) then
+      while is_blank_line(contents[l + 1]) do
+        l = l + 1
+      end
+    end
+    table.insert(collapsed, line)
+    l = l + 1
+  end
+  return collapsed
+end
+
+--- Normalizes Markdown input to a canonical form.
+--- (Implementation taken from 'vim.lsp.util._normalize_markdown'.)
+---
+--- The returned Markdown adheres to the GitHub Flavored Markdown (GFM)
+--- specification.
+---
+--- The following transformations are made:
+---
+---   1. Carriage returns ('\r') and empty lines at the beginning and end are removed
+---   2. Successive empty lines are collapsed into a single empty line
+---   3. Thematic breaks are expanded to the given width
+---
+---@private
+---@param contents string[]
+---@param opts? table
+---@return string[] table of lines containing normalized Markdown
+---@see https://github.github.com/gfm
+local function normalize_markdown(contents, opts)
+  opts = opts or {}
+
+  -- 1. Carriage returns are removed
+  contents = vim.split(table.concat(contents, '\n'):gsub('\r', ''), '\n', { trimempty = true })
+
+  -- 2. Successive empty lines are collapsed into a single empty line
+  contents = collapse_blank_lines(contents)
+
+  -- 3. Thematic breaks are expanded to the given width
+  local divider = string.rep('─', opts.width or 80)
+  contents = replace_separators(contents, divider)
+
+  return contents
+end
+
 --- @param contents string[]?
 --- @param bufnr integer?
 --- @param syntax string?
@@ -262,6 +354,9 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   local floating_bufnr = bufnr or api.nvim_create_buf(false, true)
   local do_stylize = syntax == 'markdown' and opts.stylize_markdown
 
+  -- Compute size of float needed to show (wrapped) lines
+  opts._wrap_at = opts.wrap and api.nvim_win_get_width(0) or nil
+
   -- if contents given, always set buf lines
   -- if no bufnr, contents is required
   if contents or not bufnr then
@@ -270,7 +365,9 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
 
     if do_stylize then
       -- applies the syntax and sets the lines to the buffer
-      contents = vim.lsp.util.stylize_markdown(floating_bufnr, contents, opts)
+      local width, _ = make_floating_popup_size(contents, opts)
+      contents = normalize_markdown(contents, { width = width })
+      api.nvim_buf_set_lines(floating_bufnr, 0, -1, false, contents)
     else
       if syntax then
         vim.bo[floating_bufnr].syntax = syntax
@@ -294,17 +391,9 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
     end
   end
 
-  -- Compute size of float needed to show (wrapped) lines
-  opts._wrap_at = opts.wrap and api.nvim_win_get_width(0) or nil
   local width, height = make_floating_popup_size(contents, opts)
-
   local float_opts = make_floating_popup_options(width, height, opts)
   local hover_winid = api.nvim_open_win(floating_bufnr, false, float_opts)
-
-  if do_stylize then
-    vim.wo[hover_winid].conceallevel = 2
-    vim.wo[hover_winid].concealcursor = 'n'
-  end
 
   -- disable folding
   vim.wo[hover_winid].foldenable = false
@@ -324,6 +413,13 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
 
   vim.w[hover_winid].hover_preview = hover_winid
   vim.b[cbuf].hover_preview = hover_winid
+
+  if do_stylize then
+    vim.wo[hover_winid].conceallevel = 2
+    vim.wo[hover_winid].concealcursor = 'n'
+    vim.bo[floating_bufnr].filetype = 'markdown'
+    vim.treesitter.start(floating_bufnr)
+  end
 
   return hover_winid
 end
