@@ -147,7 +147,7 @@ Definitions for valid words
 Priority: 100
 
 ### Highlight
-`require('hover.providers.dap')`
+`require('hover.providers.highlight')`
 
 Highlight group preview using `vim.inspect_pos`
 
