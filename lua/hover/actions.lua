@@ -155,14 +155,15 @@ end
 --- @param provider_id integer
 --- @param config Hover.Config
 --- @param result Hover.Result
---- @param opts Hover.Options
+--- @param popts Hover.Options
+--- @param float_opts table
 --- @return integer hover_winid
-local function show_hover(bufnr, provider_id, config, result, opts)
+local function show_hover(bufnr, provider_id, config, result, popts, float_opts)
   local util = require('hover.util')
-  local winid = util.open_floating_preview(result.lines, result.bufnr, result.filetype, opts)
+  local winid = util.open_floating_preview(result.lines, result.bufnr, result.filetype, float_opts)
 
   if config.title then
-    add_title(bufnr, winid, provider_id, opts)
+    add_title(bufnr, winid, provider_id, popts)
   end
   vim.w[winid].hover_provider = provider_id
 
@@ -192,7 +193,7 @@ local function run_provider(provider, popts)
 
   if result then
     async.scheduler()
-    show_hover(popts.bufnr, provider.id, config, result, opts)
+    show_hover(popts.bufnr, provider.id, config, result, popts, opts)
     return true
   end
 
