@@ -168,7 +168,7 @@ local function show_hover(bufnr, provider_id, config, result, popts, float_opts)
   local winid = util.open_floating_preview(result.lines, result.bufnr, result.filetype, float_opts)
 
   if config.title then
-    local contextual = type(config.title) == "table" and config.title.contextual
+    local contextual = type(config.title) == 'table' and config.title.contextual
     add_title(bufnr, winid, provider_id, popts, contextual)
   end
   vim.w[winid].hover_provider = provider_id

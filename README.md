@@ -54,6 +54,7 @@ use {
             -- to a :h preview-window when pressing the hover keymap.
             preview_window = false,
             title = true,
+            -- title = { contextual = true },  -- Hides title when there's only one provider
             mouse_providers = {
                 'LSP'
             },
