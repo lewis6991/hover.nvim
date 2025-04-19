@@ -14,7 +14,7 @@ local default_config = {
 }
 
 --- @class Hover.UserConfig: Hover.Config
---- @field title? boolean
+--- @field title? boolean | table
 --- @field mouse_providers? string[]
 --- @field mouse_delay? integer
 --- @field preview_opts? table

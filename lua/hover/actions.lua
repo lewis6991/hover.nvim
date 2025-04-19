@@ -28,7 +28,8 @@ end
 --- @param winnr integer
 --- @param active_provider_id integer
 --- @param opts Hover.Options
-local function add_title(bufnr, winnr, active_provider_id, opts)
+--- @param contextual boolean
+local function add_title(bufnr, winnr, active_provider_id, opts, contextual)
   if not has_winbar then
     vim.notify_once('hover.nvim: `config.title` requires neovim >= 0.8.0', vim.log.levels.WARN)
     return
@@ -45,6 +46,10 @@ local function add_title(bufnr, winnr, active_provider_id, opts)
       title[#title + 1] = '%#Normal# '
       winbar_length = winbar_length + #p.name + 2 -- + 2 for whitespace padding
     end
+  end
+
+  if #title <= 2 and contextual then
+    return
   end
 
   local config = api.nvim_win_get_config(winnr)
@@ -163,7 +168,8 @@ local function show_hover(bufnr, provider_id, config, result, popts, float_opts)
   local winid = util.open_floating_preview(result.lines, result.bufnr, result.filetype, float_opts)
 
   if config.title then
-    add_title(bufnr, winid, provider_id, popts)
+    local contextual = type(config.title) == "table" and config.title.contextual
+    add_title(bufnr, winid, provider_id, popts, contextual)
   end
   vim.w[winid].hover_provider = provider_id
 
