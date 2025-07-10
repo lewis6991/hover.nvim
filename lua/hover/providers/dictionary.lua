@@ -32,22 +32,22 @@ end
 
 local cache = {} --- @type table<string,string[]>
 
-local execute = async.void(function(_opts, done)
-  local word = vim.fn.expand('<cword>')
+local function execute(_opts, done)
+  async.run(function()
+    local word = vim.fn.expand('<cword>')
 
-  if not cache[word] then
-    local job = require('hover.async.job').job
+    if not cache[word] then
+      local output = async.await(3, vim.system, {
+        'curl',
+        'https://api.dictionaryapi.dev/api/v2/entries/en/' .. word,
+      }).stdout
 
-    local output = job({
-      'curl',
-      'https://api.dictionaryapi.dev/api/v2/entries/en/' .. word,
-    })
+      cache[word] = process(output) or { 'no definition for ' .. word }
+    end
 
-    cache[word] = process(output) or { 'no definition for ' .. word }
-  end
-
-  done({ lines = cache[word], filetype = 'markdown' })
-end)
+    done({ lines = cache[word], filetype = 'markdown' })
+  end)
+end
 
 require('hover').register({
   name = 'Dictionary',

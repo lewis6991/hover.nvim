@@ -1,5 +1,3 @@
-local async = require('hover.async')
-
 local M = {}
 
 --- @class Hover.Options
@@ -16,7 +14,7 @@ local M = {}
 
 --- @class Hover.Provider : Hover.RegisterProvider
 --- @field id integer
---- @field execute_a fun(opts?: Hover.Options): Hover.Result
+--- @field execute fun(opts?: Hover.Options): Hover.Result
 
 --- @type Hover.Provider[]
 local providers = {}
@@ -39,7 +37,6 @@ function M.register(provider)
 
   --- @cast provider Hover.Provider
 
-  provider.execute_a = async.wrap(provider.execute, 2)
   provider.id = id_cnt
   id_cnt = id_cnt + 1
 

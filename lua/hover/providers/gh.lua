@@ -44,54 +44,53 @@ local function process(result, stderr)
   return lines
 end
 
-local execute = async.void(function(_opts, done)
-  local bufnr = api.nvim_get_current_buf()
-  local cwd = fn.fnamemodify(api.nvim_buf_get_name(bufnr), ':p:h')
-  local id = fn.expand('<cword>')
+local function execute(_opts, done)
+  async.run(function()
+    local bufnr = api.nvim_get_current_buf()
+    local cwd = fn.fnamemodify(api.nvim_buf_get_name(bufnr), ':p:h')
+    local id = fn.expand('<cword>')
 
-  local word = fn.expand('<cWORD>')
+    local word = fn.expand('<cWORD>')
 
-  local output ---@type string?
-  local stderr ---@type string?
+    local obj --- @type vim.SystemObj
 
-  local fields = 'author,title,number,body,state,createdAt,updatedAt,url'
+    local fields = 'author,title,number,body,state,createdAt,updatedAt,url'
 
-  local job = require('hover.async.job').job
-
-  local repo, num = word:match('([%w-]+/[%w%.-_]+)#(%d+)')
-  if repo then
-    output, stderr = job({
-      'gh',
-      'issue',
-      'view',
-      '--json',
-      fields,
-      num,
-      '-R',
-      repo,
-      cwd = cwd,
-    })
-  else
-    num = word:match('#(%d+)')
-    if num then
-      output, stderr = job({
+    local repo, num = word:match('([%w-]+/[%w%.-_]+)#(%d+)')
+    if repo then
+      obj = async.await(3, vim.system, {
         'gh',
         'issue',
         'view',
         '--json',
         fields,
-        id,
+        num,
+        '-R',
+        repo,
         cwd = cwd,
       })
     else
-      done(false)
-      return
+      num = word:match('#(%d+)')
+      if num then
+        obj = async.await(vim.system, {
+          'gh',
+          'issue',
+          'view',
+          '--json',
+          fields,
+          id,
+          cwd = cwd,
+        })
+      else
+        done(false)
+        return
+      end
     end
-  end
 
-  local results = process(output, stderr)
-  done(results and { lines = results, filetype = 'markdown' })
-end)
+    local results = process(obj.stdout, obj.stderr)
+    done(results and { lines = results, filetype = 'markdown' })
+  end)
+end
 
 require('hover').register({
   name = 'Github',

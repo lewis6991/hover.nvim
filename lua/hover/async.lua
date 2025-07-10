@@ -1,89 +1,80 @@
-local co = coroutine
-
-local async_thread = {
-  ---@type {[string]: boolean}
-  threads = {},
-}
-
-function async_thread.inside()
-  local id = string.format('%p', co.running())
-  return async_thread.threads[id]
-end
-
-function async_thread.create(fn)
-  local thread = co.create(fn)
-  local id = string.format('%p', thread)
-  async_thread.threads[id] = true
-  return thread
-end
-
-function async_thread.finished(x)
-  if co.status(x) == 'dead' then
-    local id = string.format('%p', x)
-    async_thread.threads[id] = nil
-    return true
-  end
-  return false
-end
-
-local function execute(async_fn, ...)
-  local thread = async_thread.create(async_fn)
-
-  local function step(...)
-    local ret = { co.resume(thread, ...) }
-    local stat, err_or_fn, nargs = unpack(ret)
-
-    if not stat then
-      error(
-        string.format(
-          'The coroutine failed with this message: %s\n%s',
-          err_or_fn,
-          debug.traceback(thread)
-        )
-      )
-    end
-
-    if async_thread.finished(thread) then
-      return
-    end
-
-    assert(type(err_or_fn) == 'function', 'type error :: expected func')
-
-    local ret_fn = err_or_fn
-    local args = { select(4, unpack(ret)) }
-    args[nargs] = step
-    ret_fn(unpack(args, 1, nargs))
-  end
-
-  step(...)
-end
-
 local M = {}
 
----@generic F
----@param func F
----@param argc integer
----@return F
-function M.wrap(func, argc)
-  ---@async
-  return function(...)
-    if not async_thread.inside() then
-      return func(...)
-    end
-    return co.yield(func, argc, ...)
+local yield_marker = {}
+
+local function resume(thread, ...)
+  --- @type [boolean, {}, string|fun(callback: fun(...))]]
+  local ret = { coroutine.resume(thread, ...) }
+  local stat = ret[1]
+
+  if not stat then
+    error(debug.traceback(thread, ret[2]), 0)
+  elseif coroutine.status(thread) == 'dead' then
+    return
+  end
+
+  local marker, fn = ret[2], ret[3]
+
+  assert(type(fn) == 'function', 'type error :: expected func')
+
+  if marker ~= yield_marker or not vim.is_callable(fn) then
+    return error('Unexpected coroutine.yield')
+  end
+
+  local ok, perr = pcall(fn, function(...)
+    resume(thread, ...)
+  end)
+  if not ok then
+    resume(thread, perr)
   end
 end
 
-function M.void(func)
-  return function(...)
-    if async_thread.inside() then
-      return func(...)
+---Executes a future with a callback when it is done
+--- @param async_fn function: the future to execute
+--- @param ... any
+function M.run(async_fn, ...)
+  resume(coroutine.create(async_fn), ...)
+end
+
+local function check(err, ...)
+  if err then
+    error(err, 0)
+  end
+  return ...
+end
+
+function M.await(argc, func, ...)
+  if type(argc) == 'function' then
+    func = argc
+    argc = 1
+  end
+  local nargs, args = select('#', ...), { ... }
+  return check(coroutine.yield(yield_marker, function(callback)
+    args[argc] = function(...)
+      callback(nil, ...)
     end
-    execute(func, ...)
+    nargs = math.max(nargs, argc)
+    return func(unpack(args, 1, nargs))
+  end))
+end
+
+--- Creates an async function with a callback style function.
+--- @param argc integer The number of arguments of func. Must be included.
+--- @param func function A callback style function to be converted. The last argument must be the callback.
+--- @return function: Returns an async function
+--- @overload fun(func: function): function
+function M.wrap(argc, func)
+  if type(argc) == 'function' then
+    func = argc
+    argc = 1
+  end
+  assert(type(argc) == 'number')
+  assert(type(func) == 'function')
+  return function(...)
+    return M.await(argc, func, ...)
   end
 end
 
---- @type fun()
-M.scheduler = M.wrap(vim.schedule, 1)
+M.scheduler = M.wrap(vim.schedule)
 
 return M

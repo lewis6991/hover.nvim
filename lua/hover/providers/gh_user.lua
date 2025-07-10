@@ -74,18 +74,19 @@ local function process(stdout, stderr)
   return res
 end
 
-local execute = async.void(function(_opts, done)
+local function execute(_opts, done)
   local bufnr = api.nvim_get_current_buf()
   local cwd = fn.fnamemodify(api.nvim_buf_get_name(bufnr), ':p:h')
   local user = get_user()
   if not user then
     done(false)
   end
-  local job = require('hover.async.job').job
 
-  local results = process(job({ 'gh', 'api', 'users/' .. user, cwd = cwd }))
-  done(results and { lines = results, filetype = 'markdown' })
-end)
+  vim.system({ 'gh', 'api', 'users/' .. user, cwd = cwd }, {}, function(out)
+    local results = process(out.stdout, out.stderr)
+    done(results and { lines = results, filetype = 'markdown' })
+  end)
+end
 
 require('hover').register({
   name = 'Github User',

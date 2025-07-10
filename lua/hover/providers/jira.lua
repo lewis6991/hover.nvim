@@ -10,16 +10,14 @@ require('hover').register({
   execute = function(_opts, done)
     local query = vim.fn.expand('<cWORD>'):match(ISSUE_PATTERN)
 
-    local job = require('hover.async.job').job
-
-    job({ 'jira', 'issue', 'view', query, '--plain' }, function(result)
-      if not result then
+    vim.system({ 'jira', 'issue', 'view', query, '--plain' }, {}, function(result)
+      if not result.code > 0 then
         done(false)
         return
       end
 
       local lines = {}
-      for line in result:gmatch('[^\r\n]+') do
+      for line in result.stdout:gmatch('[^\r\n]+') do
         -- Remove lines starting with \27, which is not formatted well and
         -- is only there for help/context/suggestion lines anyway.
         if line:find('^\27') == nil then

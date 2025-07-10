@@ -170,6 +170,7 @@ local function show_hover(bufnr, provider_id, config, result, popts, float_opts)
   return winid
 end
 
+--- @async
 --- @param provider Hover.Provider
 --- @param popts Hover.Options
 --- @return boolean
@@ -189,7 +190,7 @@ local function run_provider(provider, popts)
 
   opts.relative = popts.relative
 
-  local result = provider.execute_a(popts)
+  local result = async.await(2, provider.execute, popts)
 
   if result then
     async.scheduler()
@@ -222,42 +223,44 @@ function M.close(bufnr)
 end
 
 --- @param opts Hover.Options
-M.hover = async.void(function(opts)
-  init()
+function M.hover(opts)
+  async.run(function()
+    init()
 
-  local bufnr = opts and opts.bufnr or api.nvim_get_current_buf()
+    local bufnr = opts and opts.bufnr or api.nvim_get_current_buf()
 
-  local hover_win = vim.b[bufnr].hover_preview
-  local current_provider = hover_win
-      and api.nvim_win_is_valid(hover_win)
-      and vim.w[hover_win].hover_provider
-    or nil
+    local hover_win = vim.b[bufnr].hover_preview
+    local current_provider = hover_win
+        and api.nvim_win_is_valid(hover_win)
+        and vim.w[hover_win].hover_provider
+      or nil
 
-  --- If hover is open then set use_provider to false until we cycle to the
-  --- next available provider.
-  local use_provider = current_provider == nil
+    --- If hover is open then set use_provider to false until we cycle to the
+    --- next available provider.
+    local use_provider = current_provider == nil
 
-  for _, provider in ipairs(providers) do
-    if not opts or not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
-      async.scheduler()
-      if use_provider and is_enabled(provider, bufnr, opts) and run_provider(provider, opts) then
-        return
-      end
-      if provider.id == current_provider then
-        use_provider = true
-      end
-    end
-  end
-
-  for _, provider in ipairs(providers) do
-    if not opts or not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
-      async.scheduler()
-      if is_enabled(provider, bufnr, opts) and run_provider(provider, opts) then
-        return
+    for _, provider in ipairs(providers) do
+      if not opts or not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
+        async.scheduler()
+        if use_provider and is_enabled(provider, bufnr, opts) and run_provider(provider, opts) then
+          return
+        end
+        if provider.id == current_provider then
+          use_provider = true
+        end
       end
     end
-  end
-end)
+
+    for _, provider in ipairs(providers) do
+      if not opts or not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
+        async.scheduler()
+        if is_enabled(provider, bufnr, opts) and run_provider(provider, opts) then
+          return
+        end
+      end
+    end
+  end)
+end
 
 --- @param direction string, 'previous' | 'next'
 --- @param opts Hover.Options
@@ -284,12 +287,14 @@ function M.hover_switch(direction, opts)
 
   if current_provider then
     if direction == 'previous' then
-      async.void(run_provider)(
+      async.run(
+        run_provider,
         providers[active_providers[(provider_idx - 1) % provider_count]],
         opts
       )
     elseif direction == 'next' then
-      async.void(run_provider)(
+      async.run(
+        run_provider,
         providers[active_providers[(provider_idx + 1) % provider_count]],
         opts
       )
@@ -316,7 +321,7 @@ function M.hover_select(opts)
     },
     function(provider)
       if provider then
-        async.void(run_provider)(provider, opts)
+        async.run(run_provider, provider, opts)
       end
     end
   )
