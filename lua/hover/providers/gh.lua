@@ -72,7 +72,7 @@ local function execute(_opts, done)
     else
       num = word:match('#(%d+)')
       if num then
-        obj = async.await(vim.system, {
+        obj = async.await(3, vim.system, {
           'gh',
           'issue',
           'view',
