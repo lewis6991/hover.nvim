@@ -82,7 +82,7 @@ local function execute(_opts, done)
     done(false)
   end
 
-  vim.system({ 'gh', 'api', 'users/' .. user, cwd = cwd }, {}, function(out)
+  vim.system({ 'gh', 'api', 'users/' .. user }, { cwd = cwd }, function(out)
     local results = process(out.stdout, out.stderr)
     done(results and { lines = results, filetype = 'markdown' })
   end)
