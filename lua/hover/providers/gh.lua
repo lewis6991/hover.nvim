@@ -67,8 +67,7 @@ local function execute(_opts, done)
         num,
         '-R',
         repo,
-        cwd = cwd,
-      })
+      }, { cwd = cwd })
     else
       num = word:match('#(%d+)')
       if num then
@@ -79,8 +78,7 @@ local function execute(_opts, done)
           '--json',
           fields,
           id,
-          cwd = cwd,
-        })
+        }, { cwd = cwd })
       else
         done(false)
         return
