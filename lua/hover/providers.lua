@@ -1,3 +1,5 @@
+local config = require('hover.config').get()
+
 local M = {}
 
 --- @class Hover.Options
@@ -40,7 +42,7 @@ function M.register(provider)
   provider.id = id_cnt
   id_cnt = id_cnt + 1
 
-  local overriden_priorities = require('hover.config').get().provider_priorities or {}
+  local overriden_priorities = config.provider_priorities or {}
 
   if overriden_priorities[provider.name] then
     provider.priority = overriden_priorities[provider.name]
