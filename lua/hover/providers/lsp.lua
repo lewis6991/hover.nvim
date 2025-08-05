@@ -69,7 +69,7 @@ local function create_params(bufnr, row, col)
       textDocument = { uri = vim.uri_from_bufnr(bufnr) },
       position = {
         line = row,
-        character = str_utfindex(line, client.offset_encoding, col)
+        character = str_utfindex(line, client.offset_encoding, col),
       },
     }
   end

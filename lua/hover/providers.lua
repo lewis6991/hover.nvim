@@ -40,6 +40,12 @@ function M.register(provider)
   provider.id = id_cnt
   id_cnt = id_cnt + 1
 
+  local overriden_priorities = require('hover.config').get().provider_priorities or {}
+
+  if overriden_priorities[provider.name] then
+    provider.priority = overriden_priorities[provider.name]
+  end
+
   if provider.priority then
     for i, p in ipairs(providers) do
       if not p.priority or p.priority < provider.priority then
