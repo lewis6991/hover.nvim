@@ -1,14 +1,18 @@
 local api = vim.api
 local hover = require('hover')
 
+--- @param buf integer
+--- @return integer? win
 local function find_window(buf)
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    if vim.api.nvim_win_get_buf(win) == buf then
+  for _, win in ipairs(api.nvim_list_wins()) do
+    if api.nvim_win_get_buf(win) == buf then
       return win
     end
   end
 end
 
+--- @param win integer
+--- @param buf integer
 local function resize_window(win, buf)
   if not api.nvim_win_is_valid(win) then
     -- Could happen if the user moves the buffer into a new window
@@ -29,6 +33,7 @@ local function resize_window(win, buf)
   api.nvim_win_set_height(win, height)
 end
 
+--- @param buf integer
 local function resizing_layer(buf)
   local ui = require('dap.ui')
   local layer = ui.layer(buf)
@@ -43,31 +48,27 @@ local function resizing_layer(buf)
   return layer
 end
 
+--- @param buf integer
 local function set_default_bufopts(buf)
   vim.bo[buf].modifiable = false
   vim.bo[buf].buftype = 'nofile'
-  api.nvim_buf_set_keymap(
-    buf,
-    'n',
-    '<CR>',
-    "<Cmd>lua require('dap.ui').trigger_actions({ mode = 'first' })<CR>",
-    {}
-  )
-  api.nvim_buf_set_keymap(buf, 'n', 'a', "<Cmd>lua require('dap.ui').trigger_actions()<CR>", {})
-  api.nvim_buf_set_keymap(buf, 'n', 'o', "<Cmd>lua require('dap.ui').trigger_actions()<CR>", {})
-  api.nvim_buf_set_keymap(
-    buf,
-    'n',
-    '<2-LeftMouse>',
-    "<Cmd>lua require('dap.ui').trigger_actions()<CR>",
-    {}
-  )
-end
 
-local function new_buf()
-  local buf = api.nvim_create_buf(false, true)
-  set_default_bufopts(buf)
-  return buf
+  local function keymap(key, f)
+    vim.keymap.set('n', key, f, { buffer = buf })
+  end
+
+  keymap('<CR>', function()
+    require('dap.ui').trigger_actions({ mode = 'first' })
+  end)
+  keymap('a', function()
+    require('dap.ui').trigger_actions()
+  end)
+  keymap('o', function()
+    require('dap.ui').trigger_actions()
+  end)
+  keymap('<2-LeftMouse>', function()
+    require('dap.ui').trigger_actions()
+  end)
 end
 
 hover.register({
@@ -77,7 +78,8 @@ hover.register({
     return has_dap and dap.session()
   end,
   execute = function(_opts, done)
-    local buf = new_buf()
+    local buf = api.nvim_create_buf(false, true)
+    set_default_bufopts(buf)
     local layer = resizing_layer(buf)
     local fake_view = {
       layer = function()
