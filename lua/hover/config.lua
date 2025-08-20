@@ -19,6 +19,7 @@ local default_config = {
 --- @field mouse_delay? integer
 --- @field preview_opts? table
 --- @field preview_window? boolean
+--- @field provider_priorities? table
 
 --- @type Hover.Config
 local config
