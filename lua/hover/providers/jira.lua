@@ -7,7 +7,7 @@ require('hover').register({
     -- Match 2 or more uppercase letters followed by a '-' and 1 or more digits.
     return vim.fn.expand('<cWORD>'):match(ISSUE_PATTERN) ~= nil
   end,
-  execute = function(_opts, done)
+  execute = function(_params, done)
     local query = vim.fn.expand('<cWORD>'):match(ISSUE_PATTERN)
 
     vim.system({ 'jira', 'issue', 'view', query, '--plain' }, {}, function(result)
@@ -17,7 +17,7 @@ require('hover').register({
       end
 
       local lines = {}
-      for line in result.stdout:gmatch('[^\r\n]+') do
+      for line in assert(result.stdout):gmatch('[^\r\n]+') do
         -- Remove lines starting with \27, which is not formatted well and
         -- is only there for help/context/suggestion lines anyway.
         if line:find('^\27') == nil then

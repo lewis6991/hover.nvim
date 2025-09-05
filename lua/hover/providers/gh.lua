@@ -6,6 +6,13 @@ local function enabled()
   return fn.expand('<cWORD>'):match('#%d+') ~= nil
 end
 
+--- @param cmd string[]
+--- @param opts vim.SystemOpts?
+--- @param cb fun(out: vim.SystemCompleted)
+local function system(cmd, opts, cb)
+  vim.system(cmd, opts, cb)
+end
+
 ---@param result string?
 ---@param stderr string?
 ---@return string[]?
@@ -21,8 +28,9 @@ local function process(result, stderr)
 
   local ok, json = pcall(vim.json.decode, result)
   if not ok then
-    async.scheduler()
-    vim.notify('Failed to parse gh result: ' .. json, vim.log.levels.ERROR)
+    vim.schedule(function()
+      vim.notify('Failed to parse gh result: ' .. json, vim.log.levels.ERROR)
+    end)
     return
   end
 
@@ -44,7 +52,9 @@ local function process(result, stderr)
   return lines
 end
 
-local function execute(_opts, done)
+--- @param _params Hover.Provider.Params
+--- @param done fun(result?: false|Hover.Result)
+local function execute(_params, done)
   async.run(function()
     local bufnr = api.nvim_get_current_buf()
     local cwd = fn.fnamemodify(api.nvim_buf_get_name(bufnr), ':p:h')
@@ -52,13 +62,13 @@ local function execute(_opts, done)
 
     local word = fn.expand('<cWORD>')
 
-    local obj --- @type vim.SystemObj
+    local obj --- @type vim.SystemCompleted
 
     local fields = 'author,title,number,body,state,createdAt,updatedAt,url'
 
     local repo, num = word:match('([%w-]+/[%w%.-_]+)#(%d+)')
     if repo then
-      obj = async.await(3, vim.system, {
+      obj = async.await(3, system, {
         'gh',
         'issue',
         'view',
@@ -71,7 +81,7 @@ local function execute(_opts, done)
     else
       num = word:match('#(%d+)')
       if num then
-        obj = async.await(3, vim.system, {
+        obj = async.await(3, system, {
           'gh',
           'issue',
           'view',

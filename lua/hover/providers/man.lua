@@ -12,9 +12,9 @@ require('hover').register({
       'make',
     }, vim.bo[bufnr].filetype)
   end,
-  execute = function(opts, done)
+  execute = function(params, done)
     local word = vim.fn.expand('<cword>')
-    local section = vim.bo[opts.bufnr].filetype == 'tcl' and 'n' or '1'
+    local section = vim.bo[params.bufnr].filetype == 'tcl' and 'n' or '1'
     local uri = string.format('man://%s(%s)', word, section)
 
     local bufnr = api.nvim_create_buf(false, true)

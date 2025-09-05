@@ -61,10 +61,16 @@ use {
         }
 
         -- Setup keymaps
-        vim.keymap.set("n", "K", require("hover").hover, {desc = "hover.nvim"})
-        vim.keymap.set("n", "gK", require("hover").hover_select, {desc = "hover.nvim (select)"})
-        vim.keymap.set("n", "<C-p>", function() require("hover").hover_switch("previous") end, {desc = "hover.nvim (previous source)"})
-        vim.keymap.set("n", "<C-n>", function() require("hover").hover_switch("next") end, {desc = "hover.nvim (next source)"})
+        vim.keymap.set("n", "K", require("hover").hover, {desc = "hover.nvim (open)"})
+        vim.keymap.set("n", "gK", require("hover").enter, {desc = "hover.nvim (enter)"})
+
+        vim.keymap.set("n", "<C-p>", function()
+            require("hover").hover_switch("previous")
+        end, {desc = "hover.nvim (previous source)"})
+
+        vim.keymap.set("n", "<C-n>", function()
+            require("hover").hover_switch("next")
+        end, {desc = "hover.nvim (next source)"})
 
         -- Mouse support
         vim.keymap.set('n', '<MouseMove>', require('hover').hover_mouse, { desc = "hover.nvim (mouse)" })
@@ -158,16 +164,15 @@ Call `require('hover').register(<provider>)` with a table containing the followi
 - `enabled`: function, whether the hover is active for the current context
 - `execute`: function, executes the hover. Has the following arguments:
     - `opts`: Additional options:
-        - `bufnr` (integer)
-        - `pos` ({[1]: integer, [2]: integer})
-        - `relative` (string)
+        - `bufnr`: (`integer`)
+        - `pos`: (`[[integer, integer]`)
     - `done`: callback. First argument should be passed:
         - `nil`/`false` if the hover failed to execute. This will allow other lower priority hovers to run.
         - A table with the following fields:
-          - `lines` (string array)
-          - `filetype` (string)
-          - `bufnr` (integer?) use a pre-populated buffer for the hover window. Ignores `lines`.
-- `priority`: number (optional), priority of the provider
+          - `lines`: (`string[]`)
+          - `filetype`: (`string`)
+          - `bufnr`: (`integer?`) use a pre-populated buffer for the hover window. Ignores `lines`.
+- `priority`: (`integer?`), priority of the provider
 
 
 ### Example:
@@ -180,9 +185,9 @@ require('hover').register {
    enabled = function(bufnr)
      return true
    end,
-   --- @param opts Hover.Options
+   --- @param params Hover.Options
    --- @param done fun(result: any)
-   execute = function(opts, done)
+   execute = function(params, done)
      done{lines={'TEST'}, filetype="markdown"}
    end
 }

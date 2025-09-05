@@ -2,6 +2,8 @@ local api = vim.api
 
 local M = {}
 
+--- @param winnr integer
+--- @param bufnrs? integer[]
 local function close_preview_window(winnr, bufnrs)
   vim.schedule(function()
     -- exit if we are in one of ignored buffers
@@ -59,18 +61,6 @@ local function trim_empty_lines(lines)
   return vim.list_extend({}, lines, start, finish)
 end
 
----@type ({[1]: string, [2]: string}|string)[]
-local default_border = {
-  { '', 'NormalFloat' },
-  { '', 'NormalFloat' },
-  { '', 'NormalFloat' },
-  { ' ', 'NormalFloat' },
-  { '', 'NormalFloat' },
-  { '', 'NormalFloat' },
-  { '', 'NormalFloat' },
-  { ' ', 'NormalFloat' },
-}
-
 --- @param width integer
 --- @param height integer
 --- @param opts vim.api.keyset.win_config
@@ -110,7 +100,7 @@ local function make_floating_popup_options(width, height, opts)
     row = row,
     style = 'minimal',
     width = width,
-    border = opts.border or default_border,
+    border = opts.border,
     zindex = opts.zindex or 50,
   }
 end
@@ -124,47 +114,40 @@ local BORDER_WIDTHS = {
   shadow = 1,
 }
 
+local function invalid_border(border)
+  return ('invalid floating preview border: %s. :help vim.api.nvim_open_win()'):format(
+    vim.inspect(border)
+  )
+end
+
+--- @param opts Hover.float_config
+--- @return integer
 local function get_border_width(opts)
-  local border = opts and opts.border or default_border
+  local border = opts.border or vim.opt.winborder:get()
 
   if type(border) == 'string' then
     if not BORDER_WIDTHS[border] then
-      error(
-        string.format(
-          'invalid floating preview border: %s. :help vim.api.nvim_open_win()',
-          vim.inspect(border)
-        )
-      )
+      error(invalid_border(border))
     end
     return BORDER_WIDTHS[border]
-  end
-
-  if 8 % #border ~= 0 then
-    error(
-      string.format(
-        'invalid floating preview border: %s. :help vim.api.nvim_open_win()',
-        vim.inspect(border)
-      )
-    )
+  elseif 8 % #border ~= 0 then
+    error(invalid_border(border))
   end
 
   ---@param id integer
   ---@return integer
   local function border_width(id)
     id = (id - 1) % #border + 1
-    if type(border[id]) == 'table' then
+    local part = border[id]
+    if type(part) == 'table' then
+      --- @cast part [string, string]
       -- border specified as a table of <character, highlight group>
-      return vim.fn.strdisplaywidth(border[id][1])
-    elseif type(border[id]) == 'string' then
+      return vim.fn.strdisplaywidth(part[1])
+    elseif type(part) == 'string' then
       -- border specified as a list of border characters
-      return vim.fn.strdisplaywidth(border[id] --[[@as string]])
+      return vim.fn.strdisplaywidth(part)
     end
-    error(
-      string.format(
-        'invalid floating preview border: %s. :help vim.api.nvim_open_win()',
-        vim.inspect(border)
-      )
-    )
+    error(invalid_border(border))
   end
 
   return border_width(4 --[[right]]) + border_width(8 --[[left]])
@@ -238,18 +221,18 @@ local function make_floating_popup_size(contents, opts)
   return width, height
 end
 
----Returns true if the line is empty or only contains whitespace.
----@param line string
----@return boolean
+--- Returns true if the line is empty or only contains whitespace.
+--- @param line? string
+--- @return boolean
 local function is_blank_line(line)
-  return line and line:match('^%s*$')
+  return line ~= nil and line:match('^%s*$') ~= nil
 end
 
----Returns true if the line corresponds to a Markdown thematic break.
----@param line string
----@return boolean
+--- Returns true if the line corresponds to a Markdown thematic break.
+--- @param line? string
+--- @return boolean
 local function is_separator_line(line)
-  return line and line:match('^ ? ? ?%-%-%-+%s*$')
+  return line ~= nil and line:match('^%s*%-%-%-+%s*$') ~= nil
 end
 
 ---Replaces separator lines by the given divider and removing surrounding blank lines.

@@ -1,4 +1,4 @@
-local api, if_nil = vim.api, vim.F.if_nil
+local api = vim.api
 
 -- Most of this is taken straight from vim.diagnostic.open_float,
 -- with some tweaks to remove some unnecessary parts
@@ -81,17 +81,31 @@ local function enabled(bufnr, opts)
   return #diagnostics ~= 0
 end
 
---- @param opts Hover.Options
+local ns = api.nvim_create_namespace('hover.diagnostic')
+
+--- @param bufnr integer Buffer number
+--- @param hl_group? string Highlight group name
+--- @param lnum integer Line number (0-indexed)
+--- @param col integer Start column (0-indexed)
+--- @param end_col integer End column (exclusive)
+local function highlight(bufnr, hl_group, lnum, col, end_col)
+  api.nvim_buf_set_extmark(bufnr, ns, lnum - 1, col, {
+    end_col = end_col,
+    hl_group = hl_group,
+  })
+end
+
+--- @param params Hover.Provider.Params
 --- @param done fun(result?: Hover.Result)
-local function execute(opts, done)
-  local buffer_diagnostics = vim.diagnostic.get(opts.bufnr)
-  local lnum, col = opts.pos[1] - 1, opts.pos[2]
-  local diagnostics = filter_diagnostics(buffer_diagnostics, lnum, col, opts.bufnr)
+local function execute(params, done)
+  local buffer_diagnostics = vim.diagnostic.get(params.bufnr)
+  local lnum, col = params.pos[1] - 1, params.pos[2]
+  local diagnostics = filter_diagnostics(buffer_diagnostics, lnum, col, params.bufnr)
 
   local float_opts = get_float_opts()
 
   local severity_sort = float_opts.severity_sort
-  if float_opts.severity_sort then
+  if severity_sort then
     if type(severity_sort) == 'table' and severity_sort.reverse then
       table.sort(diagnostics, function(a, b)
         return a.severity > b.severity
@@ -110,49 +124,54 @@ local function execute(opts, done)
 
   local scope = float_opts.scope or 'line'
 
-  local prefix_opt =
-    if_nil(float_opts.prefix, (scope == 'cursor' and #diagnostics <= 1) and '' or function(_, i)
-      return string.format('%d. ', i)
-    end)
+  local prefix_opt = float_opts.prefix
+  if prefix_opt == nil then
+    if scope == 'cursor' and #diagnostics <= 1 then
+      prefix_opt = ''
+    else
+      prefix_opt = function(_, i)
+        return string.format('%d. ', i)
+      end
+    end
+  end
 
   local prefix, prefix_hl_group --- @type string?, string?
   if prefix_opt then
-    vim.validate({
-      prefix = {
-        prefix_opt,
-        { 'string', 'table', 'function' },
-        "'string' or 'table' or 'function'",
-      },
-    })
+    vim.validate('prefix', prefix_opt, { 'string', 'table', 'function' })
     if type(prefix_opt) == 'string' then
       prefix = prefix_opt
     elseif type(prefix_opt) == 'table' then
+      --- @type string, string?
       prefix, prefix_hl_group = prefix_opt[1], prefix_opt[2]
     end
   end
 
-  local suffix_opt = if_nil(float_opts.suffix, function(diagnostic)
-    return diagnostic.code and string.format(' [%s]', diagnostic.code)
-  end)
+  local suffix_opt = float_opts.suffix
+  if suffix_opt == nil then
+    suffix_opt = function(diagnostic)
+      return diagnostic.code and string.format(' [%s]', diagnostic.code)
+    end
+  end
 
   local suffix, suffix_hl_group --- @type string?, string?
   if suffix_opt then
-    vim.validate({
-      suffix = {
-        suffix_opt,
-        { 'string', 'table', 'function' },
-        "'string' or 'table' or 'function'",
-      },
-    })
+    vim.validate('suffix', suffix_opt, { 'string', 'table', 'function' })
     if type(suffix_opt) == 'string' then
       suffix = suffix_opt
     elseif type(suffix_opt) == 'table' then
+      --- @type string, string?
       suffix, suffix_hl_group = suffix_opt[1], suffix_opt[2]
     end
   end
 
   local lines = {} --- @type string[]
-  local highlights = {} --- @type table[]
+
+  --- @class Hover.provider.diagnostic.Hl
+  --- @field hlname string
+  --- @field prefix { length: integer, hlname?: string }
+  --- @field suffix { length: integer, hlname?: string }
+
+  local highlights = {} --- @type Hover.provider.diagnostic.Hl[]
 
   for i, diagnostic in ipairs(diagnostics) do
     if type(prefix_opt) == 'function' then
@@ -165,8 +184,7 @@ local function execute(opts, done)
       local suffix0, suffix_hl_group0 = suffix_opt(diagnostic, i, #diagnostics)
       suffix, suffix_hl_group = suffix0 or '', suffix_hl_group0 or 'NormalFloat'
     end
-    --- @type string?
-    local hiname = highlight_map[assert(diagnostic.severity)]
+    local hiname = highlight_map[diagnostic.severity]
     local message = diagnostic.message
     if source and diagnostic.source then
       message = string.format('%s: %s', diagnostic.source, message)
@@ -176,7 +194,7 @@ local function execute(opts, done)
       local pre = j == 1 and prefix or string.rep(' ', #prefix)
       local suf = j == #message_lines and suffix or ''
       table.insert(lines, pre .. message_lines[j] .. suf)
-      table.insert(highlights, {
+      highlights[#highlights + 1] = {
         hlname = hiname,
         prefix = {
           length = j == 1 and #prefix or 0,
@@ -186,7 +204,7 @@ local function execute(opts, done)
           length = j == #message_lines and #suffix or 0,
           hlname = suffix_hl_group,
         },
-      })
+      }
     end
   end
 
@@ -195,14 +213,14 @@ local function execute(opts, done)
 
   for i, hl in ipairs(highlights) do
     local line = lines[i]
-    local prefix_len = hl.prefix and hl.prefix.length or 0
-    local suffix_len = hl.suffix and hl.suffix.length or 0
+    local prefix_len = hl.prefix.length
+    local suffix_len = hl.suffix.length
     if prefix_len > 0 then
-      api.nvim_buf_add_highlight(float_bufnr, -1, hl.prefix.hlname, i - 1, 0, prefix_len)
+      highlight(float_bufnr, hl.prefix.hlname, i, 0, prefix_len)
     end
-    api.nvim_buf_add_highlight(float_bufnr, -1, hl.hlname, i - 1, prefix_len, #line - suffix_len)
+    highlight(float_bufnr, hl.hlname, i, prefix_len, #line - suffix_len)
     if suffix_len > 0 then
-      api.nvim_buf_add_highlight(float_bufnr, -1, hl.suffix.hlname, i - 1, #line - suffix_len, -1)
+      highlight(float_bufnr, hl.suffix.hlname, i, #line - suffix_len, #line)
     end
   end
 

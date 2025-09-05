@@ -1,27 +1,43 @@
 local api = vim.api
-local npcall = vim.F.npcall
-
-local has_winbar = vim.fn.has('nvim-0.8') == 1
 
 local async = require('hover.async')
 
-local providers = require('hover.providers').providers
-local get_config = require('hover.config').get
+local function get_config()
+  return require('hover.config').get()
+end
 
+--- @class Hover.actions
 local M = {}
 
 local initialised = false
 
 --- @param provider Hover.Provider
 --- @param bufnr integer
---- @param opts? Hover.Options
+--- @param opts Hover.Options
 --- @return boolean
 local function is_enabled(provider, bufnr, opts)
-  opts = opts or {}
-  opts.bufnr = opts.bufnr or bufnr
   opts.pos = opts.pos or api.nvim_win_get_cursor(0)
 
-  return provider.enabled == nil or provider.enabled(opts.bufnr, opts)
+  if opts.providers and not vim.tbl_contains(opts.providers, provider.name) then
+    return false
+  end
+
+  assert(type(bufnr) == 'number')
+  return provider.enabled == nil or provider.enabled(bufnr, opts)
+end
+
+--- @param bufnr integer
+--- @param opts Hover.Options
+--- @return Hover.Provider[]
+local function get_providers(bufnr, opts)
+  local providers = require('hover.providers').providers
+  local ret = {} --- @type Hover.Provider[]
+  for _, p in ipairs(providers) do
+    if is_enabled(p, bufnr, opts) then
+      ret[#ret + 1] = p
+    end
+  end
+  return ret
 end
 
 --- @param bufnr integer
@@ -29,28 +45,21 @@ end
 --- @param active_provider_id integer
 --- @param opts Hover.Options
 local function add_title(bufnr, winnr, active_provider_id, opts)
-  if not has_winbar then
-    vim.notify_once('hover.nvim: `config.title` requires neovim >= 0.8.0', vim.log.levels.WARN)
-    return
-  end
-
   ---@type string[]
   local title = {}
   local winbar_length = 0
 
-  for _, p in ipairs(providers) do
-    if is_enabled(p, bufnr, opts) then
-      local hl = p.id == active_provider_id and 'TabLineSel' or 'TabLineFill'
-      title[#title + 1] = string.format('%%#%s# %s ', hl, p.name)
-      title[#title + 1] = '%#Normal# '
-      winbar_length = winbar_length + #p.name + 2 -- + 2 for whitespace padding
-    end
+  for _, p in ipairs(get_providers(bufnr, opts)) do
+    local hl = p.id == active_provider_id and 'TabLineSel' or 'TabLineFill'
+    title[#title + 1] = string.format('%%#%s# %s ', hl, p.name)
+    title[#title + 1] = '%#Normal# '
+    winbar_length = winbar_length + #p.name + 2 -- + 2 for whitespace padding
   end
 
   local config = api.nvim_win_get_config(winnr)
   api.nvim_win_set_config(winnr, {
-    height = config.height + 1,
-    width = math.max(config.width, winbar_length + 2), -- + 2 for border
+    height = assert(config.height) + 1,
+    width = math.max(assert(config.width), winbar_length + 2), -- + 2 for border
   })
   vim.wo[winnr].winbar = table.concat(title, '')
 end
@@ -60,7 +69,7 @@ end
 ---@return integer?
 local function find_window_by_var(name, value)
   for _, win in ipairs(api.nvim_list_wins()) do
-    if npcall(api.nvim_win_get_var, win, name) == value then
+    if vim.w[win][name] == value then
       return win
     end
   end
@@ -172,9 +181,10 @@ end
 
 --- @async
 --- @param provider Hover.Provider
+--- @param bufnr integer
 --- @param popts Hover.Options
 --- @return boolean
-local function run_provider(provider, popts)
+local function run_provider(provider, bufnr, popts)
   local config = get_config()
   local opts = vim.deepcopy(config.preview_opts)
 
@@ -185,20 +195,21 @@ local function run_provider(provider, popts)
   end
 
   popts = popts or {}
-  popts.bufnr = popts.bufnr or api.nvim_get_current_buf()
-  popts.pos = popts.pos or api.nvim_win_get_cursor(0)
 
   opts.relative = popts.relative
 
-  local result = async.await(2, provider.execute, popts)
+  local result = async.await(2, provider.execute, {
+    bufnr = bufnr,
+    pos = popts.pos or api.nvim_win_get_cursor(0),
+  })
 
-  if result then
-    async.scheduler()
-    show_hover(popts.bufnr, provider.id, config, result, popts, opts)
-    return true
+  if not result then
+    return false
   end
 
-  return false
+  async.scheduler()
+  show_hover(bufnr, provider.id, config, result, popts, opts)
+  return true
 end
 
 local function init()
@@ -213,8 +224,9 @@ local function init()
   end
 end
 
---- @param bufnr integer
+--- @param bufnr? integer
 function M.close(bufnr)
+  bufnr = bufnr or api.nvim_get_current_buf()
   local cur_hover = vim.b[bufnr].hover_preview
   if cur_hover and api.nvim_win_is_valid(cur_hover) then
     api.nvim_win_close(cur_hover, true)
@@ -222,11 +234,15 @@ function M.close(bufnr)
   vim.b[bufnr].hover_preview = nil
 end
 
---- @param opts Hover.Options
-function M.hover(opts)
-  async.run(function()
-    init()
+--- @class Hover.actions.open.Options: Hover.Options
+--- @field bufnr? integer
 
+--- @param opts? Hover.actions.open.Options
+function M.open(opts)
+  opts = opts or {}
+  init()
+
+  async.run(function()
     local bufnr = opts and opts.bufnr or api.nvim_get_current_buf()
 
     local hover_win = vim.b[bufnr].hover_preview
@@ -239,97 +255,77 @@ function M.hover(opts)
     --- next available provider.
     local use_provider = current_provider == nil
 
+    local providers = get_providers(bufnr, opts)
+
     for _, provider in ipairs(providers) do
-      if not opts or not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
-        async.scheduler()
-        if use_provider and is_enabled(provider, bufnr, opts) and run_provider(provider, opts) then
-          return
-        end
-        if provider.id == current_provider then
-          use_provider = true
-        end
+      async.scheduler()
+      if use_provider and run_provider(provider, bufnr, opts) then
+        return
+      end
+      if provider.id == current_provider then
+        use_provider = true
       end
     end
 
     for _, provider in ipairs(providers) do
-      if not opts or not opts.providers or vim.tbl_contains(opts.providers, provider.name) then
-        async.scheduler()
-        if is_enabled(provider, bufnr, opts) and run_provider(provider, opts) then
-          return
-        end
+      async.scheduler()
+      if run_provider(provider, bufnr, opts) then
+        return
       end
     end
   end)
 end
 
---- @param direction string, 'previous' | 'next'
---- @param opts Hover.Options
-function M.hover_switch(direction, opts)
+--- @param direction 'previous'|'next'
+--- @param opts? Hover.Options
+function M.switch(direction, opts)
+  opts = opts or {}
   local bufnr = api.nvim_get_current_buf()
-  local provider_count = 0
-  local provider_idx = 0
-  local active_providers = {} --- @type table<integer,integer>
+  local current_provider_idx = 0
+  local active_providers = {} --- @type Hover.Provider[]
   local hover_win = vim.b[bufnr].hover_preview
-  local current_provider = hover_win
+  local current_provider_id = hover_win
       and api.nvim_win_is_valid(hover_win)
       and vim.w[hover_win].hover_provider
     or nil
 
-  for n, p in ipairs(providers) do
-    if p.id == current_provider then
-      provider_idx = provider_count
-    end
-    if is_enabled(p, bufnr, opts) then
-      active_providers[provider_count] = n
-      provider_count = provider_count + 1
+  if not current_provider_id then
+    return
+  end
+
+  for _, p in ipairs(get_providers(bufnr, opts)) do
+    active_providers[#active_providers + 1] = p
+    if p.id == current_provider_id then
+      current_provider_idx = #active_providers
     end
   end
 
-  if current_provider then
-    if direction == 'previous' then
-      async.run(
-        run_provider,
-        providers[active_providers[(provider_idx - 1) % provider_count]],
-        opts
-      )
-    elseif direction == 'next' then
-      async.run(
-        run_provider,
-        providers[active_providers[(provider_idx + 1) % provider_count]],
-        opts
-      )
-    end
-  end
+  local offset = direction == 'next' and 1 or -1
+  local provider_id_sel = (current_provider_idx + offset) % #active_providers
+  local provider = assert(active_providers[provider_id_sel])
+  async.run(run_provider, provider, bufnr, opts)
 end
 
-function M.hover_select(opts)
+function M.select(opts)
   init()
 
   local bufnr = opts and opts.bufnr or api.nvim_get_current_buf()
 
-  vim.ui.select(
-    --- @param provider Hover.Provider
-    --- @return boolean
-    vim.tbl_filter(function(provider)
-      return is_enabled(provider, bufnr, opts)
-    end, providers),
-    {
-      prompt = 'Select hover:',
-      format_item = function(provider)
-        return provider.name
-      end,
-    },
-    function(provider)
-      if provider then
-        async.run(run_provider, provider, opts)
-      end
+  vim.ui.select(get_providers(bufnr, opts), {
+    prompt = 'Select hover:',
+    format_item = function(provider)
+      return provider.name
+    end,
+  }, function(provider)
+    if provider then
+      async.run(run_provider, provider, bufnr, opts)
     end
-  )
+  end)
 end
 
-local timer --- @type uv.uv_timer_t
+local timer --- @type uv.uv_timer_t?
 
-function M.hover_mouse()
+function M.mouse()
   timer = timer or assert(vim.uv.new_timer())
 
   local config = get_config()
@@ -338,6 +334,9 @@ function M.hover_mouse()
     config.mouse_delay,
     0,
     vim.schedule_wrap(function()
+      timer:stop()
+      timer = nil
+
       local pos = vim.fn.getmousepos()
       if pos.winid == 0 then
         return
@@ -350,7 +349,7 @@ function M.hover_mouse()
 
       M.close(buf)
 
-      M.hover({
+      M.open({
         providers = config.mouse_providers,
         relative = 'mouse',
         pos = { pos.line, pos.column },
@@ -358,6 +357,14 @@ function M.hover_mouse()
       })
     end)
   )
+end
+
+function M.enter()
+  local bufnr = api.nvim_get_current_buf()
+  local hover_win = vim.b[bufnr].hover_preview
+  if hover_win and api.nvim_win_is_valid(hover_win) then
+    api.nvim_set_current_win(hover_win)
+  end
 end
 
 return M

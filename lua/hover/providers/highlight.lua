@@ -1,29 +1,31 @@
 --- @param bufnr integer
+--- @return boolean
 local function enabled(bufnr)
   local inspect = vim.inspect_pos(bufnr)
   if inspect == nil then
     return false
   end
   return (inspect.treesitter ~= nil and #inspect.treesitter > 0)
-      or (inspect.semantic_tokens ~= nil and #inspect.semantic_tokens > 0)
-      or (inspect.syntax ~= nil and #inspect.syntax > 0)
-      or (inspect.extmarks ~= nil and #inspect.extmarks > 0)
+    or (inspect.semantic_tokens ~= nil and #inspect.semantic_tokens > 0)
+    or (inspect.syntax ~= nil and #inspect.syntax > 0)
+    or (inspect.extmarks ~= nil and #inspect.extmarks > 0)
 end
 
---- @param opts Hover.Options
---- @param done fun(result: any)
-local function execute(opts, done)
+--- @param params Hover.Provider.Params
+--- @param done fun(result?: Hover.Result)
+local function execute(params, done)
   local items = vim.inspect_pos(
-    opts.bufnr,
-    opts and opts.pos and opts.pos[1] - 1,
-    opts and opts.pos and opts.pos[2]
+    params.bufnr,
+    params and params.pos and params.pos[1] - 1,
+    params and params.pos and params.pos[2]
   )
   if items == nil then
-    return done()
+    done()
+    return
   end
 
   local hls = {}
-  local line = ""
+  local line = ''
   local lines = {}
 
   local function append(str, hl)
@@ -35,7 +37,7 @@ local function execute(opts, done)
 
   local function nl()
     table.insert(lines, line)
-    line = ""
+    line = ''
   end
 
   local function item(data, comment)
@@ -69,8 +71,7 @@ local function execute(opts, done)
     nl()
     local sorted_marks = vim.fn.sort(items.semantic_tokens, function(left, right)
       local left_first = left.opts.priority < right.opts.priority
-        or left.opts.priority == right.opts.priority
-        and left.opts.hl_group < right.opts.hl_group
+        or left.opts.priority == right.opts.priority and left.opts.hl_group < right.opts.hl_group
       return left_first and -1 or 1
     end)
     for _, extmark in ipairs(sorted_marks) do
@@ -106,18 +107,21 @@ local function execute(opts, done)
   end
 
   local buffer = vim.api.nvim_create_buf(false, true)
-  local ns = vim.api.nvim_create_namespace("")
+  local ns = vim.api.nvim_create_namespace('')
 
   vim.api.nvim_buf_set_lines(buffer, -1, -1, true, lines)
   for _, hl in ipairs(hls) do
-    vim.api.nvim_buf_add_highlight(buffer, ns, hl[1], hl[2], hl[3], hl[4])
+    vim.api.nvim_buf_set_extmark(buffer, ns, hl[2], hl[3], {
+      end_col = hl[4],
+      hl_group = hl[1],
+    })
   end
 
-  done { bufnr = buffer }
+  done({ bufnr = buffer })
 end
 
-require('hover').register {
+require('hover').register({
   name = 'Highlight',
   enabled = enabled,
   execute = execute,
-}
+})

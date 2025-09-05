@@ -1,24 +1,25 @@
 local M = {}
 
 --- @class Hover.Options
---- @field bufnr integer
---- @field pos {[1]: integer, [2]: integer}
+--- @field pos? [integer, integer]
 --- @field relative? string
 --- @field providers? string[]
+---
+--- @class Hover.Provider.Params
+--- @field bufnr integer
+--- @field pos [integer, integer]
 
 --- @class Hover.RegisterProvider
---- @field priority integer
 --- @field name string
---- @field execute fun(opts?: Hover.Options, done: fun(result?: false|Hover.Result))
+--- @field execute fun(params: Hover.Provider.Params, done: fun(result?: false|Hover.Result))
 --- @field enabled fun(bufnr: integer, opts?: Hover.Options): boolean
+--- @field priority? integer
 
---- @class Hover.Provider : Hover.RegisterProvider
+--- @class Hover.Provider: Hover.RegisterProvider
 --- @field id integer
---- @field execute fun(opts?: Hover.Options): Hover.Result
 
 --- @type Hover.Provider[]
-local providers = {}
-M.providers = providers
+M.providers = {}
 
 local id_cnt = 0
 
@@ -41,14 +42,14 @@ function M.register(provider)
   id_cnt = id_cnt + 1
 
   if provider.priority then
-    for i, p in ipairs(providers) do
+    for i, p in ipairs(M.providers) do
       if not p.priority or p.priority < provider.priority then
-        table.insert(providers, i, provider)
+        table.insert(M.providers, i, provider)
         return
       end
     end
   end
-  providers[#providers + 1] = provider
+  table.insert(M.providers, provider)
 end
 
 return M

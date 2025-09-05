@@ -34,6 +34,7 @@ local function resize_window(win, buf)
 end
 
 --- @param buf integer
+--- @return any
 local function resizing_layer(buf)
   local ui = require('dap.ui')
   local layer = ui.layer(buf)
@@ -77,7 +78,7 @@ hover.register({
     local has_dap, dap = pcall(require, 'dap')
     return has_dap and dap.session()
   end,
-  execute = function(_opts, done)
+  execute = function(_params, done)
     local buf = api.nvim_create_buf(false, true)
     set_default_bufopts(buf)
     local layer = resizing_layer(buf)

@@ -3,12 +3,13 @@ local M = {}
 local yield_marker = {}
 
 local function resume(thread, ...)
-  --- @type [boolean, {}, string|fun(callback: fun(...))]]
+  --- @type [boolean, string|{}, fun(callback: fun(...))]]
   local ret = { coroutine.resume(thread, ...) }
   local stat = ret[1]
 
   if not stat then
-    error(debug.traceback(thread, ret[2]), 0)
+    local err = ret[2] --[[@as string]]
+    error(debug.traceback(thread, err), 0)
   elseif coroutine.status(thread) == 'dead' then
     return
   end
@@ -29,9 +30,10 @@ local function resume(thread, ...)
   end
 end
 
----Executes a future with a callback when it is done
---- @param async_fn function: the future to execute
---- @param ... any
+--- Executes a future with a callback when it is done
+--- @generic T, R
+--- @param async_fn async fun(...:T...): R...
+--- @param ... T...
 function M.run(async_fn, ...)
   resume(coroutine.create(async_fn), ...)
 end
@@ -43,6 +45,12 @@ local function check(err, ...)
   return ...
 end
 
+--- @async
+--- @generic T, R
+--- @param argc integer
+--- @param func fun(...:T..., cb: fun(...:R...))
+--- @param ... T...
+--- @return R...
 function M.await(argc, func, ...)
   if type(argc) == 'function' then
     func = argc
@@ -59,10 +67,11 @@ function M.await(argc, func, ...)
 end
 
 --- Creates an async function with a callback style function.
---- @param argc integer The number of arguments of func. Must be included.
---- @param func function A callback style function to be converted. The last argument must be the callback.
---- @return function: Returns an async function
---- @overload fun(func: function): function
+--- @generic T, R
+--- @param argc integer
+--- @param func fun(...:T..., cb: fun(...:R...)): any
+--- @return async fun(...:T...):R...
+--- @overload fun(func: fun(cb: fun(...:R...))): async fun()
 function M.wrap(argc, func)
   if type(argc) == 'function' then
     func = argc
@@ -70,6 +79,7 @@ function M.wrap(argc, func)
   end
   assert(type(argc) == 'number')
   assert(type(func) == 'function')
+  --- @async
   return function(...)
     return M.await(argc, func, ...)
   end

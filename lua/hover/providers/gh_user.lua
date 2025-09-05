@@ -1,8 +1,5 @@
 local api, fn = vim.api, vim.fn
 
-local async = require('hover.async')
-
----@return string
 local function get_user()
   local WORD = fn.expand('<cWORD>')
   local user = WORD:match('TODO%(@?(.*)%):')
@@ -18,9 +15,9 @@ local function first_to_upper(str)
   return str:gsub('^%l', string.upper)
 end
 
----@param stdout string|nil
----@param stderr string|nil
----@return string[]?
+--- @param stdout string|nil
+--- @param stderr string|nil
+--- @return string[]?
 local function process(stdout, stderr)
   if stdout == nil then
     vim.notify(
@@ -33,8 +30,9 @@ local function process(stdout, stderr)
 
   local ok, json = pcall(vim.json.decode, stdout)
   if not ok then
-    async.scheduler()
-    vim.notify('Failed to parse gh user result' .. json, vim.log.levels.ERROR)
+    vim.schedule(function()
+      vim.notify('Failed to parse gh user result' .. json, vim.log.levels.ERROR)
+    end)
     return
   end
 
@@ -74,7 +72,9 @@ local function process(stdout, stderr)
   return res
 end
 
-local function execute(_opts, done)
+--- @param _params Hover.Provider.Params
+--- @param done fun(result?: false|Hover.Result)
+local function execute(_params, done)
   local bufnr = api.nvim_get_current_buf()
   local cwd = fn.fnamemodify(api.nvim_buf_get_name(bufnr), ':p:h')
   local user = get_user()
