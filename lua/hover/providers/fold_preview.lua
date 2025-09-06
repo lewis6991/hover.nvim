@@ -10,15 +10,20 @@ local function set_border_shift(border)
   if type(border) == 'string' then
     if border == 'none' then
       border_shift = { 0, 0, 0, 0 }
+      return
     elseif vim.tbl_contains({ 'single', 'double', 'rounded', 'solid' }, border) then
       border_shift = { -1, -1, -1, -1 }
+      return
     elseif border == 'shadow' then
       border_shift = { 0, -1, -1, 0 }
+      return
     end
+    -- error() if `border` matches non of the values above
   elseif type(border) == 'table' then
     for i = 1, 4 do
       border_shift[i] = border[i * 2] == '' and 0 or -1
     end
+    return
   end
   error('Invalid border type or value')
 end
