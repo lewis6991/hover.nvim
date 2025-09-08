@@ -279,6 +279,7 @@ end
 --- @param direction 'previous'|'next'
 --- @param opts? Hover.Options
 function M.switch(direction, opts)
+  direction = direction or 'next'
   opts = opts or {}
   local bufnr = api.nvim_get_current_buf()
   local current_provider_idx = 0
@@ -301,7 +302,8 @@ function M.switch(direction, opts)
   end
 
   local offset = direction == 'next' and 1 or -1
-  local provider_id_sel = (current_provider_idx + offset) % #active_providers
+  -- -1 and +1 to convert to 0-indexed and back
+  local provider_id_sel = ((current_provider_idx + offset - 1) % #active_providers) + 1
   local provider = assert(active_providers[provider_id_sel])
   async.run(run_provider, provider, bufnr, opts)
 end
