@@ -15,6 +15,7 @@ local default_config = {
   preview_window = false,
   title = true,
   mouse_delay = 1000,
+  --- @type (string|Hover.Config.Provider)[]
   providers = {
     'hover.providers.diagnostic',
     'hover.providers.lsp',

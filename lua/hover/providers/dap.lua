@@ -1,5 +1,4 @@
 local api = vim.api
-local hover = require('hover')
 
 --- @param buf integer
 --- @return integer? win

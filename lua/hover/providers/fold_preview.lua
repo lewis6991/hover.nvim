@@ -1,7 +1,6 @@
 local fn = vim.fn
 local api = vim.api
 
-local hover = require('hover')
 local config = require('hover.config').get()
 
 local border_shift = {} --- @type [integer, integer, integer, integer]
