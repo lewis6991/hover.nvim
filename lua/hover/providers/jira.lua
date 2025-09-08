@@ -1,6 +1,7 @@
 local ISSUE_PATTERN = '%u[%u%d]+-%d+'
 
-require('hover').register({
+--- @type Hover.Provider
+return {
   name = 'Jira',
   priority = 175,
   enabled = function()
@@ -28,4 +29,4 @@ require('hover').register({
       done({ lines = lines, filetype = 'markdown' })
     end)
   end,
-})
+}

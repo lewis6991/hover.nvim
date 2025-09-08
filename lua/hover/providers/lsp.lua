@@ -54,7 +54,8 @@ local function create_params(bufnr, row, col)
   end
 end
 
-require('hover').register({
+--- @type Hover.Provider
+return {
   name = 'LSP',
   priority = 1000,
   enabled = function(bufnr)
@@ -83,4 +84,4 @@ require('hover').register({
       end
     )
   end,
-})
+}

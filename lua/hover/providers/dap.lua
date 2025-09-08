@@ -72,7 +72,8 @@ local function set_default_bufopts(buf)
   end)
 end
 
-hover.register({
+--- @type Hover.Provider
+return {
   name = 'DAP',
   enabled = function()
     local has_dap, dap = pcall(require, 'dap')
@@ -93,4 +94,4 @@ hover.register({
     done({ bufnr = buf })
   end,
   priority = 1002, -- above lsp and diagnostics
-})
+}

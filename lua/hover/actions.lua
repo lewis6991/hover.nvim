@@ -9,9 +9,7 @@ end
 --- @class Hover.actions
 local M = {}
 
-local initialised = false
-
---- @param provider Hover.Provider
+--- @param provider Hover.ProviderWithId
 --- @param bufnr integer
 --- @param opts Hover.Options
 --- @return boolean
@@ -28,10 +26,10 @@ end
 
 --- @param bufnr integer
 --- @param opts Hover.Options
---- @return Hover.Provider[]
+--- @return Hover.ProviderWithId[]
 local function get_providers(bufnr, opts)
   local providers = require('hover.providers').providers
-  local ret = {} --- @type Hover.Provider[]
+  local ret = {} --- @type Hover.ProviderWithId[]
   for _, p in ipairs(providers) do
     if is_enabled(p, bufnr, opts) then
       ret[#ret + 1] = p
@@ -155,15 +153,10 @@ local function do_hover()
   return focus_or_close_floating_window()
 end
 
---- @class Hover.Result
---- @field lines? string[]
---- @field bufnr? integer
---- @field filetype? string
-
 --- @param bufnr integer
 --- @param provider_id integer
 --- @param config Hover.Config
---- @param result Hover.Result
+--- @param result Hover.Provider.Result
 --- @param popts Hover.Options
 --- @param float_opts table
 --- @return integer hover_winid
@@ -180,7 +173,7 @@ local function show_hover(bufnr, provider_id, config, result, popts, float_opts)
 end
 
 --- @async
---- @param provider Hover.Provider
+--- @param provider Hover.ProviderWithId
 --- @param bufnr integer
 --- @param popts Hover.Options
 --- @return boolean
@@ -212,6 +205,36 @@ local function run_provider(provider, bufnr, popts)
   return true
 end
 
+--- @param mod string
+--- @param opts? Hover.Config.Provider
+local function load_provider(mod, opts)
+  local ok, provider = pcall(require, mod)
+  if not ok then
+    error(("Error loading provider module '%s': %s"):format(mod, provider))
+  end
+
+  if type(provider) ~= 'table' then
+    if provider == true then
+      return -- actively registered
+    end
+    error(("Provider module '%s' did not return a table: %s"):format(mod, provider))
+  end
+
+  --- @cast provider Hover.Provider
+
+  for k, v in pairs(opts or {}) do
+    if k ~= 'module' then
+      provider[k] = v
+    end
+  end
+  local ok2, err = pcall(require('hover.providers').register, provider)
+  if not ok2 then
+    error(("Error registering provider '%s': %s"):format(provider, err))
+  end
+end
+
+local initialised = false
+
 local function init()
   if initialised then
     return
@@ -221,6 +244,19 @@ local function init()
   local config = get_config()
   if config and type(config.init) == 'function' then
     config.init()
+  end
+
+  for _, provider in ipairs(config.providers) do
+    if type(provider) == 'table' then
+      if not provider.module or type(provider.module) ~= 'string' then
+        error(('Invalid provider config, missing module field: %s'):format(vim.inspect(provider)))
+      end
+      load_provider(provider.module, provider)
+    elseif type(provider) == 'string' then
+      load_provider(provider)
+    else
+      error(('Invalid provider config: %s'):format(vim.inspect(provider)))
+    end
   end
 end
 
@@ -283,7 +319,7 @@ function M.switch(direction, opts)
   opts = opts or {}
   local bufnr = api.nvim_get_current_buf()
   local current_provider_idx = 0
-  local active_providers = {} --- @type Hover.Provider[]
+  local active_providers = {} --- @type Hover.ProviderWithId[]
   local hover_win = vim.b[bufnr].hover_preview
   local current_provider_id = hover_win
       and api.nvim_win_is_valid(hover_win)

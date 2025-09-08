@@ -12,7 +12,7 @@ local function enabled(bufnr)
 end
 
 --- @param params Hover.Provider.Params
---- @param done fun(result?: Hover.Result)
+--- @param done fun(result?: Hover.Provider.Result)
 local function execute(params, done)
   local items = vim.inspect_pos(
     params.bufnr,
@@ -120,8 +120,9 @@ local function execute(params, done)
   done({ bufnr = buffer })
 end
 
-require('hover').register({
+--- @type Hover.Provider
+return {
   name = 'Highlight',
   enabled = enabled,
   execute = execute,
-})
+}

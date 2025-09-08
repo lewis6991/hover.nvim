@@ -4,26 +4,41 @@ local M = {}
 --- @field pos? [integer, integer]
 --- @field relative? string
 --- @field providers? string[]
----
+
 --- @class Hover.Provider.Params
 --- @field bufnr integer
 --- @field pos [integer, integer]
 
---- @class Hover.RegisterProvider
+--- @class Hover.Provider.Result
+---
+--- @field lines? string[]
+---
+--- @field filetype? string
+---
+--- Use a pre-populated buffer for the hover window. Ignores `lines`.
+--- @field bufnr? integer
+
+--- @class Hover.Provider
 --- @field name string
---- @field execute fun(params: Hover.Provider.Params, done: fun(result?: false|Hover.Result))
+---
+--- Whether the hover is active for the current context
 --- @field enabled fun(bufnr: integer, opts?: Hover.Options): boolean
+---
+--- Executes the hover
+--- If the hover should not be shown for whatever reason call done with `nil` or
+--- `false`.
+--- @field execute fun(params: Hover.Provider.Params, done: fun(result?: false|Hover.Provider.Result))
 --- @field priority? integer
 
---- @class Hover.Provider: Hover.RegisterProvider
+--- @class Hover.ProviderWithId: Hover.Provider
 --- @field id integer
 
---- @type Hover.Provider[]
+--- @type Hover.ProviderWithId[]
 M.providers = {}
 
 local id_cnt = 0
 
---- @param provider Hover.RegisterProvider
+--- @param provider Hover.Provider
 function M.register(provider)
   if not provider.execute or type(provider.execute) ~= 'function' then
     vim.notify(
@@ -36,7 +51,7 @@ function M.register(provider)
     return
   end
 
-  --- @cast provider Hover.Provider
+  --- @cast provider Hover.ProviderWithId
 
   provider.id = id_cnt
   id_cnt = id_cnt + 1

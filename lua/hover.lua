@@ -2,7 +2,7 @@
 local M = {}
 
 --- Registers a new hover provider
---- @param provider Hover.RegisterProvider
+--- @param provider Hover.Provider
 function M.register(provider)
   require('hover.providers').register(provider)
 end
@@ -43,9 +43,9 @@ function M.close(bufnr)
   require('hover.actions').close(bufnr)
 end
 
---- Sets up Hover.nvim with user configuration.
+--- Set up user configuration.
 --- @param user_config Hover.UserConfig
-function M.setup(user_config)
+function M.config(user_config)
   require('hover.config').set(user_config)
 end
 
@@ -68,6 +68,13 @@ do -- deprecated
   --- @deprecated use open() instead.
   function M.hover(opts)
     M.open(opts)
+  end
+
+  --- Sets up Hover.nvim with user configuration.
+  --- @param user_config Hover.UserConfig
+  --- @deprecated use config() instead
+  function M.setup(user_config)
+    M.config(user_config)
   end
 end
 

@@ -1,6 +1,7 @@
 local api = vim.api
 
-require('hover').register({
+--- @type Hover.Provider
+return {
   name = 'Man',
   priority = 150,
   enabled = function(bufnr)
@@ -41,4 +42,4 @@ require('hover').register({
 
     done({ bufnr = bufnr })
   end,
-})
+}

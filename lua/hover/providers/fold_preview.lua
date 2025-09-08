@@ -31,7 +31,7 @@ end
 set_border_shift(config.preview_opts.border)
 
 --- @param params Hover.Provider.Params
---- @param done fun(result?: Hover.Result)
+--- @param done fun(result?: Hover.Provider.Result)
 local function execute(params, done)
   local cur_bufnr = params.bufnr
   local cur_pos = params.pos
@@ -90,7 +90,8 @@ local function execute(params, done)
   done({ bufnr = bufnr })
 end
 
-hover.register({
+--- @type Hover.Provider
+return {
   name = 'Fold Preview',
   enabled = function(bufnr, opts)
     local pos = opts and opts.pos or api.nvim_win_get_cursor(0)
@@ -102,4 +103,4 @@ hover.register({
   end,
   execute = execute,
   priority = 1003, -- above lsp and diagnostics and dap
-})
+}

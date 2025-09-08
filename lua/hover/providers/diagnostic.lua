@@ -96,7 +96,7 @@ local function highlight(bufnr, hl_group, lnum, col, end_col)
 end
 
 --- @param params Hover.Provider.Params
---- @param done fun(result?: Hover.Result)
+--- @param done fun(result?: Hover.Provider.Result)
 local function execute(params, done)
   local buffer_diagnostics = vim.diagnostic.get(params.bufnr)
   local lnum, col = params.pos[1] - 1, params.pos[2]
@@ -227,9 +227,10 @@ local function execute(params, done)
   done({ bufnr = float_bufnr })
 end
 
-require('hover').register({
+--- @type Hover.Provider
+return {
   name = 'Diagnostics',
   priority = 1001, -- above lsp
   enabled = enabled,
   execute = execute,
-})
+}

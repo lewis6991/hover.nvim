@@ -2,7 +2,7 @@
 
 General framework for context aware hover providers (similar to `vim.lsp.buf.hover`).
 
-Requires Nvim `v0.10.0`
+Requires Nvim `v0.11.0`
 
 ## Screenshots
 
@@ -25,168 +25,202 @@ Requires Nvim `v0.10.0`
   </tr>
  </table>
 
-## Setup and Installation
-
-via packer:
+## Configuration
 
 ```lua
-use {
-    "lewis6991/hover.nvim",
-    config = function()
-        require("hover").setup {
-            init = function()
-                -- Require providers
-                require("hover.providers.lsp")
-                -- require('hover.providers.gh')
-                -- require('hover.providers.gh_user')
-                -- require('hover.providers.jira')
-                -- require('hover.providers.dap')
-                -- require('hover.providers.fold_preview')
-                -- require('hover.providers.diagnostic')
-                -- require('hover.providers.man')
-                -- require('hover.providers.dictionary')
-                -- require('hover.providers.highlight')
-            end,
-            preview_opts = {
-                border = 'single'
-            },
-            -- Whether the contents of a currently open hover window should be moved
-            -- to a :h preview-window when pressing the hover keymap.
-            preview_window = false,
-            title = true,
-            mouse_providers = {
-                'LSP'
-            },
-            mouse_delay = 1000
-        }
+require('hover').config({
+  --- List of modules names to load as providers.
+  --- @type (string|Hover.Config.Provider)[]
+  providers = {
+    'hover.providers.diagnostic',
+    'hover.providers.lsp',
+    'hover.providers.dap',
+    'hover.providers.man',
+    'hover.providers.dictionary',
+    -- Optional, disabled by default:
+    -- 'hover.providers.gh',
+    -- 'hover.providers.gh_user',
+    -- 'hover.providers.jira',
+    -- 'hover.providers.fold_preview',
+    -- 'hover.providers.highlight',
+  },
+  preview_opts = {
+    border = 'single'
+  },
+  -- Whether the contents of a currently open hover window should be moved
+  -- to a :h preview-window when pressing the hover keymap.
+  preview_window = false,
+  title = true,
+  mouse_providers = {
+    'hover.providers.lsp',
+  },
+  mouse_delay = 1000
+})
 
-        -- Setup keymaps
-        vim.keymap.set("n", "K", require("hover").hover, {desc = "hover.nvim (open)"})
-        vim.keymap.set("n", "gK", require("hover").enter, {desc = "hover.nvim (enter)"})
+-- Setup keymaps
+vim.keymap.set('n', 'K', function()
+  require('hover').open()
+end, { desc = 'hover.nvim (open)' })
 
-        vim.keymap.set("n", "<C-p>", function()
-            require("hover").hover_switch("previous")
-        end, {desc = "hover.nvim (previous source)"})
+vim.keymap.set('n', 'gK', function()
+  require('hover').enter()
+end, { desc = 'hover.nvim (enter)' })
 
-        vim.keymap.set("n", "<C-n>", function()
-            require("hover").hover_switch("next")
-        end, {desc = "hover.nvim (next source)"})
+vim.keymap.set('n', '<C-p>', function()
+    require('hover').hover_switch('previous')
+end, { desc = 'hover.nvim (previous source)' })
 
-        -- Mouse support
-        vim.keymap.set('n', '<MouseMove>', require('hover').hover_mouse, { desc = "hover.nvim (mouse)" })
-        vim.o.mousemoveevent = true
-    end
-}
+vim.keymap.set('n', '<C-n>', function()
+    require('hover').hover_switch('next')
+end, { desc = 'hover.nvim (next source)' })
+
+-- Mouse support
+vim.keymap.set('n', '<MouseMove>', function()
+  require('hover').mouse()
+end, { desc = 'hover.nvim (mouse)' })
+
+vim.o.mousemoveevent = true
+```
+
+### Customising providers
+
+Note: Only supported for providers created with passive registration.
+
+Instead of passing a string entry to `providers` in `config()`, an object can
+be passed with additional keys to customise fields.
+
+```lua
+require('hover').config({
+  providers = {
+    {
+      module = 'hover.providers.diagnostic',
+      priority = 2000,
+      name = 'Diags'
+    }
+  }
+})
 ```
 
 ## Built in Providers
 
 ### LSP
-`require('hover.providers.lsp')`
 
 Builtin LSP
 
+Module: `hover.providers.lsp`
 Priority: 1000
 
 ### Diagnostics
-`require('hover.providers.diagnostic')`
 
 Diagnostics using `vim.diagnostic`
 
+Module: `hover.providers.diagnostic`
 Priority: 1001
 
 ### DAP
-`require('hover.providers.dap')`
 
 [DAP](https://github.com/mfussenegger/nvim-dap) hover
 
+Module: `hover.providers.dap`
 Priority: 1002
 
 ### Fold Previewing
-`require('hover.providers.fold_preview')`
 
 Preview closed fold under cursor
 
+Module: `hover.providers.fold_preview`
 Priority: 1003
 
 ### Github: Issues and PR's
-`require('hover.providers.gh')`
 
 Opens issue/PR's for symbols like `#123`.
 
 Requires the `gh` command.
 
+Module: `hover.providers.gh`
 Priority: 200
 
 ### Github: Users
-`require('hover.providers.gh_user')`
 
 Information for github users in `TODO` comments.
 Matches `TODO(<user>)` and `TODO(@<user>)`.
 
 Requires the `gh` command.
 
+Module: `hover.providers.gh_user`
 Priority: 200
 
 ### Jira
-`require('hover.providers.jira')`
 
 Opens issue for symbols like `ABC-123`.
 
 Requires the `jira` [command](https://github.com/ankitpokhrel/jira-cli).
 
+Module: `hover.providers.jira`
 Priority: 175
 
 ### Man
-`require('hover.providers.man')`
 
 `man` entries
 
+Module: `hover.providers.man`
 Priority: 150
 
 ### Dictionary
-`require('hover.providers.dictionary')`
 
 Definitions for valid words
 
+Module: `hover.providers.dictionary`
 Priority: 100
 
 ### Highlight
-`require('hover.providers.highlight')`
 
 Highlight group preview using `vim.inspect_pos`
 
+Module: `hover.providers.highlight`
+
 ## Creating a hover provider
 
-Call `require('hover').register(<provider>)` with a table containing the following fields:
+A provider can be create in one of two ways:
 
-- `name`: string, name of the hover provider
-- `enabled`: function, whether the hover is active for the current context
-- `execute`: function, executes the hover. Has the following arguments:
-    - `opts`: Additional options:
-        - `bufnr`: (`integer`)
-        - `pos`: (`[[integer, integer]`)
-    - `done`: callback. First argument should be passed:
-        - `nil`/`false` if the hover failed to execute. This will allow other lower priority hovers to run.
-        - A table with the following fields:
-          - `lines`: (`string[]`)
-          - `filetype`: (`string`)
-          - `bufnr`: (`integer?`) use a pre-populated buffer for the hover window. Ignores `lines`.
-- `priority`: (`integer?`), priority of the provider
+### Active registration
 
+Call `require('hover').register(<provider>)` with a `Hover.Provider` object.
 
-### Example:
+#### Example:
 
 ```lua
--- Simple
 require('hover').register {
    name = 'Simple',
    --- @param bufnr integer
    enabled = function(bufnr)
      return true
    end,
-   --- @param params Hover.Options
-   --- @param done fun(result: any)
+   --- @param params Hover.Provider.Params
+   --- @param done fun(result?: false|Hover.Result)
+   execute = function(params, done)
+     done{lines={'TEST'}, filetype="markdown"}
+   end
+}
+```
+
+### Passive registration
+
+Create a module in `runtimepath` which returns a `Hover.Provider` object.
+This module will be loaded by `hover.nvim` when hover is triggered.
+
+#### Example:
+
+In `myplugin/simple_provider.lua`
+```lua
+return {
+   name = 'Simple',
+   --- @param bufnr integer
+   enabled = function(bufnr)
+     return true
+   end,
+   --- @param params Hover.Provider.Params
+   --- @param done fun(result?: false|Hover.Result)
    execute = function(params, done)
      done{lines={'TEST'}, filetype="markdown"}
    end
@@ -194,9 +228,41 @@ require('hover').register {
 ```
 
 ```lua
---- @class Hover.Options
+require('hover').setup({
+    providers = {
+        'myplugin.simple_provider'
+    }
+})
+```
+
+### API
+
+```lua
+--- @class Hover.Provider
+--- @field name string
+---
+--- Whether the hover is active for the current context
+--- @field enabled fun(bufnr: integer, opts?: Hover.Options): boolean
+---
+--- Executes the hover
+--- If the hover should not be shown for whatever reason call done with `nil` or
+--- `false`.
+--- @field execute fun(params: Hover.Provider.Params, done: fun(result?: false|Hover.Provider.Result))
+--- @field priority? integer
+
+--- @class Hover.Provider.Params
 --- @field bufnr integer
---- @field pos {[1]: integer, [2]: integer}
---- @field relative? string
---- @field providers? string[]
+--- @field pos [integer, integer]
+
+--- @class Hover.Provider.Result
+---
+--- @field lines? string[]
+---
+--- @field filetype? string
+---
+--- Use a pre-populated buffer for the hover window. Ignores `lines`.
+--- @field bufnr? integer
+
+--- @param provider Hover.Provider
+function Hover.register(provider) end
 ```

@@ -53,7 +53,7 @@ local function process(result, stderr)
 end
 
 --- @param _params Hover.Provider.Params
---- @param done fun(result?: false|Hover.Result)
+--- @param done fun(result?: false|Hover.Provider.Result)
 local function execute(_params, done)
   async.run(function()
     local bufnr = api.nvim_get_current_buf()
@@ -100,9 +100,10 @@ local function execute(_params, done)
   end)
 end
 
-require('hover').register({
+--- @type Hover.Provider
+return {
   name = 'Github',
   priority = 200,
   enabled = enabled,
   execute = execute,
-})
+}

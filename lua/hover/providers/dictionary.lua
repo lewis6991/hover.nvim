@@ -43,7 +43,7 @@ local function system(cmd, cb)
 end
 
 --- @param _params Hover.Provider.Params
---- @param done fun(result?: Hover.Result)
+--- @param done fun(result?: Hover.Provider.Result)
 local function execute(_params, done)
   async.run(function()
     local word = vim.fn.expand('<cword>')
@@ -61,7 +61,8 @@ local function execute(_params, done)
   end)
 end
 
-require('hover').register({
+--- @type Hover.Provider
+return {
   name = 'Dictionary',
   priority = 100,
   enabled = function()
@@ -69,4 +70,4 @@ require('hover').register({
     return #vim.spell.check(word) == 0
   end,
   execute = execute,
-})
+}
