@@ -9,7 +9,7 @@ local lsp_providers = {}
 --- @param pos [integer,integer]
 --- @return lsp.TextDocumentPositionParams
 local function create_params(client, bufnr, pos)
-  local row, col = pos[1], pos[2]
+  local row, col = pos[1] - 1, pos[2]
   local line = api.nvim_buf_get_lines(bufnr, row, row + 1, true)[1]
 
   if not line then
@@ -54,10 +54,11 @@ function LSPProvider:execute(params, done)
   client:request('textDocument/hover', rparams, function(err, result)
     if err then
       done()
-    end
-    if not result or not result.contents then
+      return
+    elseif not result or not result.contents then
       -- no results
       done()
+      return
     end
 
     local util = require('vim.lsp.util')

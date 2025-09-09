@@ -335,7 +335,6 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   vim.b[cbuf].hover_preview = nil
 
   local floating_bufnr = bufnr or api.nvim_create_buf(false, true)
-  local do_stylize = syntax == 'markdown' and opts.stylize_markdown
 
   -- Compute size of float needed to show (wrapped) lines
   opts._wrap_at = opts.wrap and api.nvim_win_get_width(0) or nil
@@ -346,7 +345,7 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
     -- Clean up input: trim empty lines from the end, pad
     contents = trim_empty_lines(assert(contents))
 
-    if do_stylize then
+    if syntax == 'markdown' then
       -- applies the syntax and sets the lines to the buffer
       local width, _ = make_floating_popup_size(contents, opts)
       contents = normalize_markdown(contents, { width = width })
@@ -379,7 +378,10 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   local hover_winid = api.nvim_open_win(floating_bufnr, false, float_opts)
 
   -- disable folding
-  vim.wo[hover_winid].foldenable = false
+  -- schedule so it runs after treesitter folding
+  vim.schedule(function()
+    vim.wo[hover_winid].foldenable = false
+  end)
   -- soft wrapping
   vim.wo[hover_winid].wrap = opts.wrap
 
@@ -397,7 +399,7 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   vim.w[hover_winid].hover_preview = hover_winid
   vim.b[cbuf].hover_preview = hover_winid
 
-  if do_stylize then
+  if syntax == 'markdown' then
     vim.wo[hover_winid].conceallevel = 2
     vim.wo[hover_winid].concealcursor = 'n'
     vim.bo[floating_bufnr].filetype = 'markdown'
