@@ -34,8 +34,6 @@ local function process(result)
   --- @field word string
   local json = res[1]
 
-  print(vim.inspect(json))
-
   ---@type string[]
   local lines = {
     'Word: _' .. json.word .. '_',
