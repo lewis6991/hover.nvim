@@ -14,19 +14,79 @@ local function process(result)
     return
   end
 
-  ---@type table
+  --- @class Hover.provider.dictionary.Json.Meaning.Definition
+  --- @field definition string
+  --- @field example string
+  --- @field antonyms string[]
+  --- @field synonyms string[]
+
+  --- @class Hover.provider.dictionary.Json.Meaning
+  --- @field partOfSpeech? string
+  --- @field definitions Hover.provider.dictionary.Json.Meaning.Definition[]
+  --- @field antonyms string[]
+  --- @field synonyms string[]
+
+  --- @class Hover.provider.dictionary.Json
+  --- @field phonetic string
+  --- @field phonetics { text: string, audio: string }[]
+  --- @field sourceUrls string[]
+  --- @field meanings Hover.provider.dictionary.Json.Meaning[]
+  --- @field word string
   local json = res[1]
+
+  print(vim.inspect(json))
 
   ---@type string[]
   local lines = {
-    json.word,
+    'Word: _' .. json.word .. '_',
   }
 
-  for _, def in ipairs(json.meanings[1].definitions) do
+  if json.phonetics and #json.phonetics > 0 then
+    for _, phon in ipairs(json.phonetics) do
+      if phon.text then
+        if phon.audio and phon.audio ~= '' then
+          vim.list_extend(lines, { '', ('[%s](%s)'):format(phon.text, phon.audio) })
+        else
+          vim.list_extend(lines, { '', phon.text })
+        end
+      end
+    end
+  elseif json.phonetic then
+    vim.list_extend(lines, { '', json.phonetic })
+  end
+
+  for _, meaning in ipairs(json.meanings) do
+    if meaning.partOfSpeech then
+      vim.list_extend(lines, { '', '# Meaning (' .. meaning.partOfSpeech .. ')' })
+    else
+      vim.list_extend(lines, { '', '# Meaning' })
+    end
+    for _, def in ipairs(meaning.definitions) do
+      vim.list_extend(lines, { '', '- ' .. def.definition })
+      if def.example then
+        vim.list_extend(lines, { '  E.g. "' .. def.example .. '"' })
+      end
+
+      if def.synonyms and #def.synonyms > 0 then
+        vim.list_extend(lines, { '  Synonyms: ' .. table.concat(def.synonyms, ', ') })
+      end
+      if def.antonyms and #def.antonyms > 0 then
+        vim.list_extend(lines, { '  Antonyms: ' .. table.concat(def.antonyms, ', ') })
+      end
+    end
+    if meaning.synonyms and #meaning.synonyms > 0 then
+      vim.list_extend(lines, { '', 'Synonyms: ' .. table.concat(meaning.synonyms, ', ') })
+    end
+    if meaning.antonyms and #meaning.antonyms > 0 then
+      vim.list_extend(lines, { '', 'Antonyms: ' .. table.concat(meaning.antonyms, ', ') })
+    end
+  end
+
+  if json.sourceUrls and #json.sourceUrls > 0 then
     lines[#lines + 1] = ''
-    lines[#lines + 1] = def.definition
-    if def.example then
-      lines[#lines + 1] = 'Example: ' .. def.example
+    vim.list_extend(lines, { '', '# Sources' })
+    for _, url in ipairs(json.sourceUrls or {}) do
+      lines[#lines + 1] = '- ' .. url
     end
   end
 
@@ -54,7 +114,7 @@ local function execute(_params, done)
         'https://api.dictionaryapi.dev/api/v2/entries/en/' .. word,
       }).stdout
 
-      cache[word] = process(output) or { 'no definition for ' .. word }
+      cache[word] = process(output) or { 'no definition for _' .. word .. '_' }
     end
 
     done({ lines = cache[word], filetype = 'markdown' })
