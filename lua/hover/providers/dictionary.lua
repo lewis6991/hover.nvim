@@ -39,20 +39,6 @@ local function process(result)
     'Word: _' .. json.word .. '_',
   }
 
-  if json.phonetics and #json.phonetics > 0 then
-    for _, phon in ipairs(json.phonetics) do
-      if phon.text then
-        if phon.audio and phon.audio ~= '' then
-          vim.list_extend(lines, { '', ('[%s](%s)'):format(phon.text, phon.audio) })
-        else
-          vim.list_extend(lines, { '', phon.text })
-        end
-      end
-    end
-  elseif json.phonetic then
-    vim.list_extend(lines, { '', json.phonetic })
-  end
-
   for _, meaning in ipairs(json.meanings) do
     if meaning.partOfSpeech then
       vim.list_extend(lines, { '', '# Meaning (' .. meaning.partOfSpeech .. ')' })
@@ -78,6 +64,19 @@ local function process(result)
     if meaning.antonyms and #meaning.antonyms > 0 then
       vim.list_extend(lines, { '', 'Antonyms: ' .. table.concat(meaning.antonyms, ', ') })
     end
+  end
+
+  if json.phonetics and #json.phonetics > 0 then
+    vim.list_extend(lines, { '', '# Phonetics' })
+    for _, phon in ipairs(json.phonetics) do
+      if phon.audio and phon.audio ~= '' then
+        lines[#lines + 1] = ('- [%s](%s)'):format(phon.text, phon.audio)
+      else
+        lines[#lines + 1] = '- ' .. phon.text
+      end
+    end
+  elseif json.phonetic then
+    vim.list_extend(lines, { '', '# Phonetic', '- ' .. json.phonetic })
   end
 
   if json.sourceUrls and #json.sourceUrls > 0 then

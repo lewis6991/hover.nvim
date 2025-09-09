@@ -52,21 +52,18 @@ function LSPProvider:execute(params, done)
   local client = assert(lsp.get_client_by_id(self.client_id))
   local rparams = create_params(client, params.bufnr, params.pos)
   client:request('textDocument/hover', rparams, function(err, result)
+    --- @cast result lsp.Hover?
     if err then
-      done()
-      return
+      done({ lines = { 'Error: ' .. vim.inspect(err) } })
     elseif not result or not result.contents then
-      -- no results
       done()
-      return
+    else
+      local lines = lsp.util.convert_input_to_markdown_lines(result.contents)
+      if vim.tbl_isempty(lines) then
+        lines = { 'empty' }
+      end
+      done({ lines = lines, filetype = 'markdown' })
     end
-
-    local util = require('vim.lsp.util')
-    local lines = util.convert_input_to_markdown_lines(result.contents)
-    if vim.tbl_isempty(lines) then
-      lines = { 'empty' }
-    end
-    done({ lines = lines, filetype = 'markdown' })
   end, params.bufnr)
 end
 

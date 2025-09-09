@@ -1,18 +1,19 @@
 local api = vim.api
+local diagnostic = vim.diagnostic
 
 -- Most of this is taken straight from vim.diagnostic.open_float,
 -- with some tweaks to remove some unnecessary parts
 
 local highlight_map = {
-  [vim.diagnostic.severity.ERROR] = 'DiagnosticFloatingError',
-  [vim.diagnostic.severity.WARN] = 'DiagnosticFloatingWarn',
-  [vim.diagnostic.severity.INFO] = 'DiagnosticFloatingInfo',
-  [vim.diagnostic.severity.HINT] = 'DiagnosticFloatingHint',
+  [diagnostic.severity.ERROR] = 'DiagnosticFloatingError',
+  [diagnostic.severity.WARN] = 'DiagnosticFloatingWarn',
+  [diagnostic.severity.INFO] = 'DiagnosticFloatingInfo',
+  [diagnostic.severity.HINT] = 'DiagnosticFloatingHint',
 }
 
 --- @return vim.diagnostic.Opts.Float
 local function get_float_opts()
-  local config = vim.diagnostic.config() --[[@as vim.diagnostic.Opts]]
+  local config = diagnostic.config() --[[@as vim.diagnostic.Opts]]
   local t = config.float
   if type(t) ~= 'table' then
     -- vim.diagnostic.open_float also ignores non-table config
@@ -28,8 +29,8 @@ end
 local function count_sources(diagnostics)
   local seen = {} --- @type table<string,true>
   local count = 0
-  for _, diagnostic in ipairs(diagnostics) do
-    local source = diagnostic.source
+  for _, d in ipairs(diagnostics) do
+    local source = d.source
     if source and not seen[source] then
       seen[source] = true
       count = count + 1
@@ -38,47 +39,27 @@ local function count_sources(diagnostics)
   return count
 end
 
---- @param diagnostics vim.Diagnostic[]
---- @param lnum integer
---- @param col integer
---- @param bufnr integer
---- @return vim.Diagnostic[]
-local function filter_diagnostics(diagnostics, lnum, col, bufnr)
+--- @param pos [integer, integer]
+--- @return vim.diagnostic.GetOpts
+local function get_diag_opts(pos)
   local float_opts = get_float_opts()
   local scope = float_opts.scope or 'line'
 
+  local opts = {}
   if scope == 'line' then
-    --- @param d vim.Diagnostic
-    --- @return boolean
-    diagnostics = vim.tbl_filter(function(d)
-      return lnum >= d.lnum
-        and lnum <= d.end_lnum
-        and (d.lnum == d.end_lnum or lnum ~= d.end_lnum or d.end_col ~= 0)
-    end, diagnostics)
+    opts.lnum = pos[1] - 1
   elseif scope == 'cursor' then
-    -- If `col` is past the end of the line, show if the cursor is on the last char in the line
-    local line_length = #api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, true)[1]
-    --- @param d vim.Diagnostic
-    --- @return boolean
-    diagnostics = vim.tbl_filter(function(d)
-      return lnum >= d.lnum
-        and lnum <= d.end_lnum
-        and (lnum ~= d.lnum or col >= math.min(d.col, line_length - 1))
-        and ((d.lnum == d.end_lnum and d.col == d.end_col) or lnum ~= d.end_lnum or col < d.end_col)
-    end, diagnostics)
+    opts.pos = { pos[1] - 1, pos[2] }
   end
-  return diagnostics
+  return opts
 end
 
 --- @param bufnr integer
 --- @param opts? Hover.Options
 --- @return boolean
 local function enabled(bufnr, opts)
-  local buffer_diagnostics = vim.diagnostic.get(bufnr)
   local pos = opts and opts.pos or api.nvim_win_get_cursor(0)
-  local lnum, col = pos[1] - 1, pos[2]
-  local diagnostics = filter_diagnostics(buffer_diagnostics, lnum, col, bufnr)
-  return #diagnostics ~= 0
+  return next(diagnostic.get(bufnr, get_diag_opts(pos))) ~= nil
 end
 
 local ns = api.nvim_create_namespace('hover.diagnostic')
@@ -98,9 +79,8 @@ end
 --- @param params Hover.Provider.Params
 --- @param done fun(result?: Hover.Provider.Result)
 local function execute(params, done)
-  local buffer_diagnostics = vim.diagnostic.get(params.bufnr)
-  local lnum, col = params.pos[1] - 1, params.pos[2]
-  local diagnostics = filter_diagnostics(buffer_diagnostics, lnum, col, params.bufnr)
+  local buffer_diagnostics = diagnostic.get(params.bufnr)
+  local diagnostics = diagnostic.get(params.bufnr, get_diag_opts(params.pos))
 
   local float_opts = get_float_opts()
 
@@ -148,8 +128,9 @@ local function execute(params, done)
 
   local suffix_opt = float_opts.suffix
   if suffix_opt == nil then
-    suffix_opt = function(diagnostic)
-      return diagnostic.code and string.format(' [%s]', diagnostic.code)
+    --- @param d vim.Diagnostic
+    suffix_opt = function(d)
+      return d.code and string.format(' [%s]', d.code)
     end
   end
 
@@ -173,21 +154,20 @@ local function execute(params, done)
 
   local highlights = {} --- @type Hover.provider.diagnostic.Hl[]
 
-  for i, diagnostic in ipairs(diagnostics) do
+  for i, d in ipairs(diagnostics) do
     if type(prefix_opt) == 'function' then
       --- @cast prefix_opt fun(...): string?, string?
-      local prefix0, prefix_hl_group0 = prefix_opt(diagnostic, i, #diagnostics)
+      local prefix0, prefix_hl_group0 = prefix_opt(d, i, #diagnostics)
       prefix, prefix_hl_group = prefix0 or '', prefix_hl_group0 or 'NormalFloat'
     end
     if type(suffix_opt) == 'function' then
       --- @cast suffix_opt fun(...): string?, string?
-      local suffix0, suffix_hl_group0 = suffix_opt(diagnostic, i, #diagnostics)
+      local suffix0, suffix_hl_group0 = suffix_opt(d, i, #diagnostics)
       suffix, suffix_hl_group = suffix0 or '', suffix_hl_group0 or 'NormalFloat'
     end
-    local hiname = highlight_map[diagnostic.severity]
-    local message = diagnostic.message
-    if source and diagnostic.source then
-      message = string.format('%s: %s', diagnostic.source, message)
+    local message = d.message
+    if source and d.source then
+      message = string.format('%s: %s', d.source, message)
     end
     local message_lines = vim.split(message, '\n')
     for j = 1, #message_lines do
@@ -195,7 +175,7 @@ local function execute(params, done)
       local suf = j == #message_lines and suffix or ''
       table.insert(lines, pre .. message_lines[j] .. suf)
       highlights[#highlights + 1] = {
-        hlname = hiname,
+        hlname = highlight_map[d.severity],
         prefix = {
           length = j == 1 and #prefix or 0,
           hlname = prefix_hl_group,

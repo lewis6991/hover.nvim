@@ -201,11 +201,7 @@ local function run_provider(provider, providers, bufnr, popts)
   local result = async.await(2, provider.execute, {
     bufnr = bufnr,
     pos = popts.pos or api.nvim_win_get_cursor(0),
-  })
-
-  if not result then
-    return false
-  end
+  }) or { lines = { 'No result' } }
 
   async.scheduler()
   show_hover(provider.id, providers, config, result, opts)
