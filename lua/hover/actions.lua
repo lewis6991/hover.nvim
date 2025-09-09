@@ -38,27 +38,34 @@ local function get_providers(bufnr, opts)
   return ret
 end
 
---- @param winnr integer
 --- @param active_provider_id integer
 --- @param providers Hover.ProviderWithId[]
-local function add_title(winnr, active_provider_id, providers)
+--- @return string title
+--- @return integer length
+local function make_title(active_provider_id, providers)
   ---@type string[]
   local title = {}
   local winbar_length = 0
 
   for _, p in ipairs(providers) do
     local hl = p.id == active_provider_id and 'TabLineSel' or 'TabLineFill'
-    title[#title + 1] = string.format('%%#%s# %s ', hl, p.name)
-    title[#title + 1] = '%#Normal# '
+    title[#title + 1] = ('%%#%s# %s %%#Normal#'):format(hl, p.name)
     winbar_length = winbar_length + #p.name + 2 -- + 2 for whitespace padding
   end
 
-  local config = api.nvim_win_get_config(winnr)
-  api.nvim_win_set_config(winnr, {
-    height = assert(config.height) + 1,
-    width = math.max(assert(config.width), winbar_length + 2), -- + 2 for border
+  return table.concat(title, ' '), winbar_length + #title - 1
+end
+
+--- @param winid integer
+--- @param title string
+--- @param winbar_length integer
+local function add_title(winid, title, winbar_length)
+  local config = api.nvim_win_get_config(winid)
+  api.nvim_win_set_config(winid, {
+    height = config.height + 1,
+    width = math.max(config.width, winbar_length + 2), -- + 2 for border
   })
-  vim.wo[winnr].winbar = table.concat(title, '')
+  vim.wo[winid].winbar = title
 end
 
 ---@param name string
@@ -163,7 +170,8 @@ local function show_hover(provider_id, providers, config, result, float_opts)
   local winid = util.open_floating_preview(result.lines, result.bufnr, result.filetype, float_opts)
 
   if config.title then
-    add_title(winid, provider_id, providers)
+    local title, winbar_length = make_title(provider_id, providers)
+    add_title(winid, title, winbar_length)
   end
   vim.w[winid].hover_provider = provider_id
 

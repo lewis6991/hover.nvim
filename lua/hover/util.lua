@@ -218,7 +218,7 @@ local function make_floating_popup_size(contents, opts)
     height = math.min(height, max_height)
   end
 
-  return width, height
+  return width, math.max(1, height)
 end
 
 --- Returns true if the line is empty or only contains whitespace.

@@ -101,83 +101,96 @@ require('hover').config({
 })
 ```
 
+For providers which are actively registered, the provider modules may expose
+methods for configuration.
+
 ## Built in Providers
 
 ### LSP
 
-Builtin LSP
-
 Module: `hover.providers.lsp`
 Priority: 1000
+Registration: active
+
+Builtin LSP. Suppors multiple clients.
 
 ### Diagnostics
 
-Diagnostics using `vim.diagnostic`
-
 Module: `hover.providers.diagnostic`
 Priority: 1001
+Registration: passive
+
+Diagnostics using `vim.diagnostic`
 
 ### DAP
 
-[DAP](https://github.com/mfussenegger/nvim-dap) hover
-
 Module: `hover.providers.dap`
 Priority: 1002
+Registration: passive
+
+[DAP](https://github.com/mfussenegger/nvim-dap) hover
 
 ### Fold Previewing
 
-Preview closed fold under cursor
-
 Module: `hover.providers.fold_preview`
 Priority: 1003
+Registration: passive
+
+Preview closed fold under cursor
 
 ### Github: Issues and PR's
 
-Opens issue/PR's for symbols like `#123`.
-
-Requires the `gh` command.
-
 Module: `hover.providers.gh`
 Priority: 200
+Registration: passive
+
+Opens issue/PR's for symbols like `#123`.
+
+Note: Requires the `gh` command.
 
 ### Github: Users
+
+Module: `hover.providers.gh_user`
+Priority: 200
+Registration: passive
 
 Information for github users in `TODO` comments.
 Matches `TODO(<user>)` and `TODO(@<user>)`.
 
-Requires the `gh` command.
-
-Module: `hover.providers.gh_user`
-Priority: 200
+Note: Requires the `gh` command.
 
 ### Jira
+
+Module: `hover.providers.jira`
+Priority: 175
+Registration: passive
 
 Opens issue for symbols like `ABC-123`.
 
 Requires the `jira` [command](https://github.com/ankitpokhrel/jira-cli).
 
-Module: `hover.providers.jira`
-Priority: 175
-
 ### Man
-
-`man` entries
 
 Module: `hover.providers.man`
 Priority: 150
+Registration: passive
+
+`man` entries
 
 ### Dictionary
 
-Definitions for valid words
-
 Module: `hover.providers.dictionary`
 Priority: 100
+Registration: passive
+
+Definitions for valid words
 
 ### Highlight
 
-Highlight group preview using `vim.inspect_pos`
-
 Module: `hover.providers.highlight`
+Registration: passive
+
+Highlight group preview using `vim.inspect_pos`
 
 ## Creating a hover provider
 
@@ -185,12 +198,14 @@ A provider can be create in one of two ways:
 
 ### Active registration
 
+Active registration can be used to register providers dynamically, however they cannot be configured via the `providers` fields in `config()`.
+
 Call `require('hover').register(<provider>)` with a `Hover.Provider` object.
 
 #### Example:
 
 ```lua
-require('hover').register {
+local provider_id = require('hover').register({
    name = 'Simple',
    --- @param bufnr integer
    enabled = function(bufnr)
@@ -201,7 +216,7 @@ require('hover').register {
    execute = function(params, done)
      done{lines={'TEST'}, filetype="markdown"}
    end
-}
+})
 ```
 
 ### Passive registration
