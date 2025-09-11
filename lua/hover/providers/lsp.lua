@@ -1,7 +1,7 @@
 local api = vim.api
 local lsp = vim.lsp
 
---- @type table<integer, integer?> -- client_id -> provider_id
+--- @type table<integer, Hover.Provider?> -- client_id -> provider_id
 local lsp_providers = {}
 
 --- @param client vim.lsp.Client
@@ -67,6 +67,9 @@ function LSPProvider:execute(params, done)
   end, params.bufnr)
 end
 
+--- @type Hover.Provider[]
+local providers = {}
+
 --- @param client vim.lsp.Client
 local function register_lsp_provider(client)
   if not client:supports_method('textDocument/hover') then
@@ -74,18 +77,16 @@ local function register_lsp_provider(client)
   end
 
   local lsp_provider = LSPProvider:new(client.id)
-  lsp_providers[client.id] = require('hover.providers').register({
-    name = ('LSP[%s]'):format(client.name),
-    -- TODO(lewis6991): allow this to be configured somehow
-    priority = 1000,
+  lsp_providers[client.id] = {
+    name = client.name,
     enabled = function(bufnr)
       return lsp_provider:enabled(bufnr)
     end,
     execute = function(params, done)
       lsp_provider:execute(params, done)
     end,
-    client_id = client.id,
-  })
+  }
+  providers[#providers + 1] = lsp_providers[client.id]
 end
 
 api.nvim_create_autocmd('LspAttach', {
@@ -110,3 +111,9 @@ api.nvim_create_autocmd('LspAttach', {
 for _, client in pairs(lsp.get_clients()) do
   register_lsp_provider(client)
 end
+
+return {
+  name = 'LSP',
+  priority = 1000,
+  providers = providers,
+}

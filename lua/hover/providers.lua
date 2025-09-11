@@ -1,3 +1,4 @@
+--- @class Hover.providers
 local M = {}
 
 --- @class Hover.Options
@@ -22,7 +23,7 @@ local M = {}
 --- @field name string
 ---
 --- Whether the hover is active for the current context
---- @field enabled fun(bufnr: integer, opts?: Hover.Options): boolean
+--- @field enabled? fun(bufnr: integer, opts?: Hover.Options): boolean
 ---
 --- Executes the hover
 --- If the hover should not be shown for whatever reason call done with `nil` or
@@ -30,18 +31,29 @@ local M = {}
 --- @field execute fun(params: Hover.Provider.Params, done: fun(result?: false|Hover.Provider.Result))
 --- @field priority? integer
 
---- @class Hover.ProviderWithId: Hover.Provider
---- @field id integer
+--- @class Hover.ProviderGroup
+---
+--- Optional name used to prefix provider names
+--- @field name? string
+---
+--- @field priority? integer
+---
+--- @field providers Hover.Provider[]
 
---- @type Hover.ProviderWithId[]
+--- @class (exact) Hover.Provider.Resolved: Hover.Provider
+--- @field id integer
+--- @field module string
+
+--- @type Hover.Provider.Resolved[]
 M.providers = {}
 
 local id_cnt = 0
 
---- @param provider Hover.Provider
---- @return integer? provider_id
-function M.register(provider)
-  if not provider.execute or type(provider.execute) ~= 'function' then
+--- @param provider Hover.Provider.Resolved
+--- @param mod string
+--- @param group? Hover.ProviderGroup
+local function add_provider(provider, mod, group)
+  if not provider.execute then
     error(
       ('error: hover provider %s does not provide an execute function'):format(
         provider.name or 'NA'
@@ -49,10 +61,16 @@ function M.register(provider)
     )
   end
 
-  --- @cast provider Hover.ProviderWithId
-
   provider.id = id_cnt
   id_cnt = id_cnt + 1
+  provider.module = mod
+
+  if group then
+    provider.priority = provider.priority or group.priority
+    if group.name then
+      provider.name = ('%s[%s]'):format(group.name, provider.name)
+    end
+  end
 
   if provider.priority then
     for i, p in ipairs(M.providers) do
@@ -63,27 +81,63 @@ function M.register(provider)
     end
   end
   table.insert(M.providers, provider)
-
-  return provider.id
 end
 
---- @param id integer provider id to unregister
-function M.unregister(id)
-  for i, p in ipairs(M.providers) do
-    if p.id == id then
-      table.remove(M.providers, i)
-      return
+--- @param provider_or_group Hover.Provider|Hover.ProviderGroup
+--- @param module string
+local function add_provider_or_group(provider_or_group, module)
+  if provider_or_group.providers then
+    local group = provider_or_group --[[@as Hover.ProviderGroup]]
+    local gproviders = group.providers --[[@as Hover.Provider.Resolved[] ]]
+    for _, p in ipairs(gproviders) do
+      add_provider(p, module, group)
+    end
+  else
+    local provider = provider_or_group --[[@as Hover.Provider.Resolved]]
+    add_provider(provider, module)
+  end
+end
+
+--- @param module string
+--- @param opts? Hover.Config.Provider
+local function load_provider(module, opts)
+  local ok, provider = pcall(require, module)
+  if not ok then
+    error(("Error loading provider module '%s': %s"):format(module, provider))
+  end
+
+  if type(provider) ~= 'table' then
+    if provider == true then
+      return -- actively registered
+    end
+    error(("Provider module '%s' did not return a table: %s"):format(module, provider))
+  end
+
+  --- @cast provider Hover.Provider
+
+  for k, v in pairs(opts or {}) do
+    if k ~= 'module' then
+      provider[k] = v
     end
   end
-  error('Could not find hover provider with id ' .. tostring(id))
+  local ok2, err = pcall(add_provider_or_group, provider, module)
+  if not ok2 then
+    error(("Error registering provider '%s' from module %s: %s"):format(provider, module, err))
+  end
 end
 
---- @param id integer provider id to unregister
---- @return Hover.ProviderWithId?
-function M.get(id)
-  for _, p in ipairs(M.providers) do
-    if p.id == id then
-      return p
+--- @param config_providers (string|Hover.Config.Provider)[]
+function M.init(config_providers)
+  for _, provider in ipairs(config_providers) do
+    if type(provider) == 'table' then
+      if not provider.module or type(provider.module) ~= 'string' then
+        error(('Invalid provider config, missing module field: %s'):format(vim.inspect(provider)))
+      end
+      load_provider(provider.module, provider)
+    elseif type(provider) == 'string' then
+      load_provider(provider)
+    else
+      error(('Invalid provider config: %s'):format(vim.inspect(provider)))
     end
   end
 end

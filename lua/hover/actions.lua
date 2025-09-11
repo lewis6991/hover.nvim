@@ -9,37 +9,35 @@ end
 --- @class Hover.actions
 local M = {}
 
---- @param provider Hover.ProviderWithId
+--- @param provider Hover.Provider.Resolved
 --- @param bufnr integer
 --- @param opts Hover.Options
 --- @return boolean
 local function is_enabled(provider, bufnr, opts)
-  opts.pos = opts.pos or api.nvim_win_get_cursor(0)
-
-  if opts.providers and not vim.tbl_contains(opts.providers, provider.name) then
-    return false
-  end
-
-  assert(type(bufnr) == 'number')
   return provider.enabled == nil or provider.enabled(bufnr, opts)
 end
 
 --- @param bufnr integer
 --- @param opts Hover.Options
---- @return Hover.ProviderWithId[]
+--- @return Hover.Provider.Resolved[]
 local function get_providers(bufnr, opts)
   local providers = require('hover.providers').providers
-  local ret = {} --- @type Hover.ProviderWithId[]
-  for _, p in ipairs(providers) do
-    if is_enabled(p, bufnr, opts) then
-      ret[#ret + 1] = p
+  opts.pos = opts.pos or api.nvim_win_get_cursor(0)
+
+  local ret = {} --- @type Hover.Provider[]
+  for _, provider in ipairs(providers) do
+    local group_enabled = not opts.providers or vim.tbl_contains(opts.providers, provider.module)
+    if group_enabled then
+      if is_enabled(provider, bufnr, opts) then
+        ret[#ret + 1] = provider
+      end
     end
   end
   return ret
 end
 
 --- @param active_provider_id integer
---- @param providers Hover.ProviderWithId[]
+--- @param providers Hover.Provider.Resolved[]
 --- @return string title
 --- @return integer length
 local function make_title(active_provider_id, providers)
@@ -160,7 +158,7 @@ local function do_hover()
 end
 
 --- @param provider_id integer
---- @param providers Hover.ProviderWithId[]
+--- @param providers Hover.Provider.Resolved[]
 --- @param config Hover.Config
 --- @param result Hover.Provider.Result
 --- @param float_opts table
@@ -179,8 +177,8 @@ local function show_hover(provider_id, providers, config, result, float_opts)
 end
 
 --- @async
---- @param provider Hover.ProviderWithId
---- @param providers Hover.ProviderWithId[]
+--- @param provider Hover.Provider.Resolved
+--- @param providers Hover.Provider.Resolved[]
 --- @param bufnr integer
 --- @param popts Hover.Options
 --- @return boolean
@@ -208,34 +206,6 @@ local function run_provider(provider, providers, bufnr, popts)
   return true
 end
 
---- @param mod string
---- @param opts? Hover.Config.Provider
-local function load_provider(mod, opts)
-  local ok, provider = pcall(require, mod)
-  if not ok then
-    error(("Error loading provider module '%s': %s"):format(mod, provider))
-  end
-
-  if type(provider) ~= 'table' then
-    if provider == true then
-      return -- actively registered
-    end
-    error(("Provider module '%s' did not return a table: %s"):format(mod, provider))
-  end
-
-  --- @cast provider Hover.Provider
-
-  for k, v in pairs(opts or {}) do
-    if k ~= 'module' then
-      provider[k] = v
-    end
-  end
-  local ok2, err = pcall(require('hover.providers').register, provider)
-  if not ok2 then
-    error(("Error registering provider '%s': %s"):format(provider, err))
-  end
-end
-
 local initialised = false
 
 local function init()
@@ -249,18 +219,7 @@ local function init()
     config.init()
   end
 
-  for _, provider in ipairs(config.providers) do
-    if type(provider) == 'table' then
-      if not provider.module or type(provider.module) ~= 'string' then
-        error(('Invalid provider config, missing module field: %s'):format(vim.inspect(provider)))
-      end
-      load_provider(provider.module, provider)
-    elseif type(provider) == 'string' then
-      load_provider(provider)
-    else
-      error(('Invalid provider config: %s'):format(vim.inspect(provider)))
-    end
-  end
+  require('hover.providers').init(config.providers)
 end
 
 --- @param bufnr? integer
@@ -285,14 +244,14 @@ function M.open(opts)
     local bufnr = opts and opts.bufnr or api.nvim_get_current_buf()
 
     local hover_win = vim.b[bufnr].hover_preview
-    local current_provider = hover_win
+    local current_provider_id = hover_win
         and api.nvim_win_is_valid(hover_win)
         and vim.w[hover_win].hover_provider
       or nil
 
     --- If hover is open then set use_provider to false until we cycle to the
     --- next available provider.
-    local use_provider = current_provider == nil
+    local use_provider = current_provider_id == nil
 
     local providers = get_providers(bufnr, opts)
 
@@ -301,7 +260,7 @@ function M.open(opts)
       if use_provider and run_provider(provider, providers, bufnr, opts) then
         return
       end
-      if provider.id == current_provider then
+      if provider.id == current_provider_id then
         use_provider = true
       end
     end

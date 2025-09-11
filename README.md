@@ -101,16 +101,12 @@ require('hover').config({
 })
 ```
 
-For providers which are actively registered, the provider modules may expose
-methods for configuration.
-
 ## Built in Providers
 
 ### LSP
 
 Module: `hover.providers.lsp`
 Priority: 1000
-Registration: active
 
 Builtin LSP. Suppors multiple clients.
 
@@ -118,7 +114,6 @@ Builtin LSP. Suppors multiple clients.
 
 Module: `hover.providers.diagnostic`
 Priority: 1001
-Registration: passive
 
 Diagnostics using `vim.diagnostic`
 
@@ -126,7 +121,6 @@ Diagnostics using `vim.diagnostic`
 
 Module: `hover.providers.dap`
 Priority: 1002
-Registration: passive
 
 [DAP](https://github.com/mfussenegger/nvim-dap) hover
 
@@ -134,7 +128,6 @@ Registration: passive
 
 Module: `hover.providers.fold_preview`
 Priority: 1003
-Registration: passive
 
 Preview closed fold under cursor
 
@@ -142,7 +135,6 @@ Preview closed fold under cursor
 
 Module: `hover.providers.gh`
 Priority: 200
-Registration: passive
 
 Opens issue/PR's for symbols like `#123`.
 
@@ -152,7 +144,6 @@ Note: Requires the `gh` command.
 
 Module: `hover.providers.gh_user`
 Priority: 200
-Registration: passive
 
 Information for github users in `TODO` comments.
 Matches `TODO(<user>)` and `TODO(@<user>)`.
@@ -163,7 +154,6 @@ Note: Requires the `gh` command.
 
 Module: `hover.providers.jira`
 Priority: 175
-Registration: passive
 
 Opens issue for symbols like `ABC-123`.
 
@@ -173,7 +163,6 @@ Requires the `jira` [command](https://github.com/ankitpokhrel/jira-cli).
 
 Module: `hover.providers.man`
 Priority: 150
-Registration: passive
 
 `man` entries
 
@@ -181,55 +170,30 @@ Registration: passive
 
 Module: `hover.providers.dictionary`
 Priority: 100
-Registration: passive
 
 Definitions for valid words
 
 ### Highlight
 
 Module: `hover.providers.highlight`
-Registration: passive
 
 Highlight group preview using `vim.inspect_pos`
 
 ## Creating a hover provider
 
-A provider can be create in one of two ways:
-
-### Active registration
-
-Active registration can be used to register providers dynamically, however they cannot be configured via the `providers` fields in `config()`.
-
-Call `require('hover').register(<provider>)` with a `Hover.Provider` object.
-
-#### Example:
-
-```lua
-local provider_id = require('hover').register({
-   name = 'Simple',
-   --- @param bufnr integer
-   enabled = function(bufnr)
-     return true
-   end,
-   --- @param params Hover.Provider.Params
-   --- @param done fun(result?: false|Hover.Result)
-   execute = function(params, done)
-     done{lines={'TEST'}, filetype="markdown"}
-   end
-})
-```
-
-### Passive registration
-
-Create a module in `runtimepath` which returns a `Hover.Provider` object.
+Create a module in `runtimepath` which returns a `Hover.Provider` or `Hover.ProviderGroup` object.
 This module will be loaded by `hover.nvim` when hover is triggered.
 
-#### Example:
+`Hover.ProviderGroup` can be used to create multiple providers.
+These providers can even be added/removed at runtime by modifying the groups `providers` field. E.g. LSP providers are added on the `LspAttach` autocommand event.
+
+### Example: `Hover.Provider`:
 
 In `myplugin/simple_provider.lua`
 ```lua
 return {
    name = 'Simple',
+   priority = 1000,
    --- @param bufnr integer
    enabled = function(bufnr)
      return true
@@ -250,6 +214,37 @@ require('hover').setup({
 })
 ```
 
+### Example: `Hover.ProviderGroup`:
+
+In `myplugin/simple_provider.lua`
+```lua
+local simple_provider = {
+  name = 'Simple',
+  --- @param bufnr integer
+  enabled = function(bufnr)
+    return true
+  end,
+  --- @param params Hover.Provider.Params
+  --- @param done fun(result?: false|Hover.Result)
+  execute = function(params, done)
+    done{lines={'TEST'}, filetype="markdown"}
+  end
+}
+
+return {
+   priority = 1000,
+   providers = { simple_provider }
+}
+```
+
+```lua
+require('hover').setup({
+    providers = {
+        'myplugin.simple_provider'
+    }
+})
+```
+
 ### API
 
 ```lua
@@ -257,7 +252,7 @@ require('hover').setup({
 --- @field name string
 ---
 --- Whether the hover is active for the current context
---- @field enabled fun(bufnr: integer, opts?: Hover.Options): boolean
+--- @field enabled? fun(bufnr: integer, opts?: Hover.Options): boolean
 ---
 --- Executes the hover
 --- If the hover should not be shown for whatever reason call done with `nil` or
@@ -278,6 +273,8 @@ require('hover').setup({
 --- Use a pre-populated buffer for the hover window. Ignores `lines`.
 --- @field bufnr? integer
 
---- @param provider Hover.Provider
-function Hover.register(provider) end
+--- @class Hover.ProviderGroup
+--- @field name? string
+--- @field priority? integer -- overrides individual priorities
+--- @field providers Hover.Provider[]
 ```
