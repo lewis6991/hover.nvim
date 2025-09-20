@@ -1,5 +1,32 @@
+local config = require('hover.config')
+
 local api = vim.api
 local lsp = vim.lsp
+local methods = vim.lsp.protocol.Methods
+local register_capability = vim.lsp.handlers[methods.client_registerCapability]
+
+local module = 'hover.providers.lsp'
+
+---@type Hover.Config.Provider
+local default_config = {
+  module = module,
+  name = 'LSP',
+  priority = 1000,
+}
+
+---@return Hover.Config.Provider
+local function get_module_config()
+  local provider_configs = config.get().providers
+
+  for _, provider_config in ipairs(provider_configs) do
+    if type(provider_config) == 'table' and provider_config.module == module then
+      return provider_config
+    end
+  end
+  return default_config
+end
+
+local module_config = get_module_config()
 
 --- @type table<integer, Hover.Provider?> -- client_id -> provider_id
 local lsp_providers = {}
@@ -13,7 +40,7 @@ local function create_params(client, bufnr, pos)
   local line = api.nvim_buf_get_lines(bufnr, row, row + 1, true)[1]
 
   if not line then
-    if require('hover.config').get().dev_mode then
+    if config.get().dev_mode then
       error(string.format('ERROR: row %d is out of range (col=%d)', row, col))
     end
     line = ''
@@ -67,10 +94,8 @@ function LSPProvider:execute(params, done)
   end, params.bufnr)
 end
 
---- @type Hover.Provider[]
-local providers = {}
-
 --- @param client vim.lsp.Client
+--- @return Hover.Provider?
 local function register_lsp_provider(client)
   if not client:supports_method('textDocument/hover') then
     return
@@ -86,16 +111,63 @@ local function register_lsp_provider(client)
       lsp_provider:execute(params, done)
     end,
   }
-  providers[#providers + 1] = lsp_providers[client.id]
+  return lsp_providers[client.id]
+end
+
+---@param client_id integer
+---@return boolean
+local function is_registered(client_id)
+  return not not lsp_providers[client_id]
+end
+
+---@param providers? Hover.Provider[]
+local function providers_group(providers)
+  return {
+    name = module_config.name,
+    priority = module_config.priority,
+    providers = providers or {},
+  }
+end
+
+---@param client_id integer
+local function add_lsp_provider_by_id(client_id)
+  if not is_registered(client_id) then
+    local client = assert(lsp.get_client_by_id(client_id))
+    local provider = register_lsp_provider(client)
+    if provider then
+      require('hover.providers').add_provider(provider, module, providers_group())
+    end
+  end
+end
+
+---@param res lsp.RegistrationParams
+---@param capability string
+---@return boolean
+local function has_capability(res, capability)
+  for _, registration in ipairs(res.registrations) do
+    if registration.method == capability then
+      return true
+    end
+  end
+  return false
+end
+
+---@param err? lsp.ResponseError
+---@param res lsp.RegistrationParams
+---@param ctx lsp.HandlerContext
+vim.lsp.handlers[methods.client_registerCapability] = function(err, res, ctx)
+  local return_value = register_capability(err, res, ctx)
+
+  if has_capability(res, methods.textDocument_hover) then
+    add_lsp_provider_by_id(ctx.client_id)
+  end
+
+  return return_value
 end
 
 api.nvim_create_autocmd('LspAttach', {
   callback = function(args)
-    local client_id = args.data.client_id
-    if not lsp_providers[client_id] then
-      local client = assert(lsp.get_client_by_id(client_id))
-      register_lsp_provider(client)
-    end
+    add_lsp_provider_by_id(args.data.client_id)
   end,
 })
 
@@ -108,12 +180,14 @@ api.nvim_create_autocmd('LspAttach', {
 --   end,
 -- })
 
+--- @type Hover.Provider[]
+local providers = {}
+
 for _, client in pairs(lsp.get_clients()) do
-  register_lsp_provider(client)
+  local provider = register_lsp_provider(client)
+  if provider then
+    providers[#providers + 1] = provider
+  end
 end
 
-return {
-  name = 'LSP',
-  priority = 1000,
-  providers = providers,
-}
+return providers_group(providers)
