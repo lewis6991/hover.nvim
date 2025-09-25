@@ -4,11 +4,12 @@ local diagnostic = vim.diagnostic
 -- Most of this is taken straight from vim.diagnostic.open_float,
 -- with some tweaks to remove some unnecessary parts
 
+--- @type table<vim.diagnostic.Severity, HoverHighlightGroup>
 local highlight_map = {
-  [diagnostic.severity.ERROR] = 'DiagnosticFloatingError',
-  [diagnostic.severity.WARN] = 'DiagnosticFloatingWarn',
-  [diagnostic.severity.INFO] = 'DiagnosticFloatingInfo',
-  [diagnostic.severity.HINT] = 'DiagnosticFloatingHint',
+  [diagnostic.severity.ERROR] = 'HoverFloatingError',
+  [diagnostic.severity.WARN] = 'HoverFloatingWarn',
+  [diagnostic.severity.INFO] = 'HoverFloatingInfo',
+  [diagnostic.severity.HINT] = 'HoverFloatingHint',
 }
 
 --- @return vim.diagnostic.Opts.Float
@@ -158,12 +159,12 @@ local function execute(params, done)
     if type(prefix_opt) == 'function' then
       --- @cast prefix_opt fun(...): string?, string?
       local prefix0, prefix_hl_group0 = prefix_opt(d, i, #diagnostics)
-      prefix, prefix_hl_group = prefix0 or '', prefix_hl_group0 or 'NormalFloat'
+      prefix, prefix_hl_group = prefix0 or '', prefix_hl_group0 or 'HoverWindow'
     end
     if type(suffix_opt) == 'function' then
       --- @cast suffix_opt fun(...): string?, string?
       local suffix0, suffix_hl_group0 = suffix_opt(d, i, #diagnostics)
-      suffix, suffix_hl_group = suffix0 or '', suffix_hl_group0 or 'NormalFloat'
+      suffix, suffix_hl_group = suffix0 or '', suffix_hl_group0 or 'HoverWindow'
     end
     local message = d.message
     if source and d.source then

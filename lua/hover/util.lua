@@ -1,5 +1,7 @@
 local api = vim.api
 
+local highlight_defaults = require('hover.highlights').HIGHLIGHT_GROUP_DEFAULTS
+
 local M = {}
 
 --- @param winnr integer
@@ -376,6 +378,14 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   local width, height = make_floating_popup_size(contents, opts)
   local float_opts = make_floating_popup_options(width, height, opts)
   local hover_winid = api.nvim_open_win(floating_bufnr, false, float_opts)
+
+  -- Set custom highlights for the window
+  local _winhl = {}
+  for hl, link in pairs(highlight_defaults) do
+    table.insert(_winhl, link .. ':' .. hl)
+  end
+  local winhl = table.concat(_winhl, ',')
+  api.nvim_set_option_value('winhl', winhl, { win = hover_winid })
 
   -- disable folding
   -- schedule so it runs after treesitter folding
