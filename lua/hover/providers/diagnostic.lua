@@ -4,7 +4,7 @@ local diagnostic = vim.diagnostic
 -- Most of this is taken straight from vim.diagnostic.open_float,
 -- with some tweaks to remove some unnecessary parts
 
---- @type table<vim.diagnostic.Severity, HoverHighlightGroup>
+--- @type table<vim.diagnostic.Severity, Hover.Highlight>
 local highlight_map = {
   [diagnostic.severity.ERROR] = 'HoverFloatingError',
   [diagnostic.severity.WARN] = 'HoverFloatingWarn',

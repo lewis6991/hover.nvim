@@ -46,7 +46,7 @@ local function make_title(active_provider_id, providers)
   local winbar_length = 0
 
   for _, p in ipairs(providers) do
-    ---@type HoverHighlightGroup
+    ---@type Hover.Highlight
     local hl = p.id == active_provider_id and 'HoverActiveSource' or 'HoverInactiveSource'
     title[#title + 1] = ('%%#%s# %s %%#HoverSourceLine#'):format(hl, p.name)
     winbar_length = winbar_length + #p.name + 2 -- + 2 for whitespace padding

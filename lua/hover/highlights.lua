@@ -1,6 +1,6 @@
 local M = {}
 
----@alias HoverHighlightGroup
+---@alias Hover.Highlight
 ---| '"HoverWindow"'
 ---| '"HoverBorder"'
 ---| '"HoverActiveSource"'
@@ -11,7 +11,7 @@ local M = {}
 ---| '"HoverFloatingInfo"'
 ---| '"HoverFloatingHint"'
 
----@type table<HoverHighlightGroup, string>
+---@type table<Hover.Highlight, string>
 M.HIGHLIGHT_GROUP_DEFAULTS = {
   HoverWindow = 'NormalFloat',
   HoverBorder = 'FloatBorder',
