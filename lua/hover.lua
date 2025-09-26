@@ -47,6 +47,7 @@ end
 --- @param user_config Hover.UserConfig
 function M.config(user_config)
   require('hover.config').set(user_config)
+  require('hover.highlights').setup()
 end
 
 do -- deprecated
