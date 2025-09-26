@@ -49,10 +49,10 @@ M.providers = {}
 
 local id_cnt = 0
 
---- @param provider Hover.Provider.Resolved
+--- @param provider Hover.Provider
 --- @param mod string
 --- @param group? Hover.ProviderGroup
-local function add_provider(provider, mod, group)
+function M.add_provider(provider, mod, group)
   if not provider.execute then
     error(
       ('error: hover provider %s does not provide an execute function'):format(
@@ -61,26 +61,28 @@ local function add_provider(provider, mod, group)
     )
   end
 
-  provider.id = id_cnt
+  local resolved = vim.deepcopy(provider) --[[@as Hover.Provider.Resolved]]
+
+  resolved.id = id_cnt
   id_cnt = id_cnt + 1
-  provider.module = mod
+  resolved.module = mod
 
   if group then
-    provider.priority = provider.priority or group.priority
+    resolved.priority = provider.priority or group.priority
     if group.name then
-      provider.name = ('%s[%s]'):format(group.name, provider.name)
+      resolved.name = ('%s[%s]'):format(group.name, provider.name)
     end
   end
 
-  if provider.priority then
+  if resolved.priority then
     for i, p in ipairs(M.providers) do
-      if not p.priority or p.priority < provider.priority then
-        table.insert(M.providers, i, provider)
+      if not p.priority or p.priority < resolved.priority then
+        table.insert(M.providers, i, resolved)
         return
       end
     end
   end
-  table.insert(M.providers, provider)
+  table.insert(M.providers, resolved)
 end
 
 --- @param provider_or_group Hover.Provider|Hover.ProviderGroup
@@ -88,13 +90,13 @@ end
 local function add_provider_or_group(provider_or_group, module)
   if provider_or_group.providers then
     local group = provider_or_group --[[@as Hover.ProviderGroup]]
-    local gproviders = group.providers --[[@as Hover.Provider.Resolved[] ]]
+    local gproviders = group.providers
     for _, p in ipairs(gproviders) do
-      add_provider(p, module, group)
+      M.add_provider(p, module, group)
     end
   else
-    local provider = provider_or_group --[[@as Hover.Provider.Resolved]]
-    add_provider(provider, module)
+    local provider = provider_or_group --[[@as Hover.Provider]]
+    M.add_provider(provider, module)
   end
 end
 
