@@ -67,11 +67,11 @@ vim.keymap.set('n', 'gK', function()
 end, { desc = 'hover.nvim (enter)' })
 
 vim.keymap.set('n', '<C-p>', function()
-    require('hover').hover_switch('previous')
+    require('hover').switch('previous')
 end, { desc = 'hover.nvim (previous source)' })
 
 vim.keymap.set('n', '<C-n>', function()
-    require('hover').hover_switch('next')
+    require('hover').switch('next')
 end, { desc = 'hover.nvim (next source)' })
 
 -- Mouse support
@@ -222,7 +222,7 @@ return {
 ```
 
 ```lua
-require('hover').setup({
+require('hover').config({
     providers = {
         'myplugin.simple_provider'
     }
@@ -253,7 +253,7 @@ return {
 ```
 
 ```lua
-require('hover').setup({
+require('hover').config({
     providers = {
         'myplugin.simple_provider'
     }
