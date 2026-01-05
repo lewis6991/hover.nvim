@@ -13,6 +13,16 @@ local function system(cmd, opts, cb)
   vim.system(cmd, opts, cb)
 end
 
+--- @class Hover.GhIssue
+--- @field author { login: string }
+--- @field number integer
+--- @field title string
+--- @field url string
+--- @field state string
+--- @field createdAt string
+--- @field updatedAt string
+--- @field body string
+
 ---@param result string?
 ---@param stderr string?
 ---@return string[]?
@@ -33,6 +43,8 @@ local function process(result, stderr)
     end)
     return
   end
+
+  --- @cast json Hover.GhIssue
 
   local lines = {
     string.format('#%d: %s', json.number, json.title),

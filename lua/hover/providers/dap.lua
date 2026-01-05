@@ -76,6 +76,7 @@ return {
   name = 'DAP',
   enabled = function()
     local has_dap, dap = pcall(require, 'dap')
+    --- @diagnostic disable-next-line: need-check-nil
     return has_dap and dap.session()
   end,
   execute = function(_params, done)

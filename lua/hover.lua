@@ -1,12 +1,6 @@
 --- @class Hover
 local M = {}
 
---- Registers a new hover provider
---- @param provider Hover.Provider
-function M.register(provider)
-  require('hover.providers').register(provider)
-end
-
 --- Opens the hover window
 --- @param opts? Hover.Options
 function M.open(opts)

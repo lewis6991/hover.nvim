@@ -35,11 +35,11 @@ local default_config = {
 --- @field title? boolean
 ---
 --- List of modules names to load as providers.
---- @field providers (string|Hover.Config.Provider)[]
+--- @field providers? (string|Hover.Config.Provider)[]
 ---
 --- List of modules names to load as providers for the hover window created
 --- by `require('hover').mouse()`.
---- @field mouse_providers string[]
+--- @field mouse_providers? string[]
 ---
 --- @field mouse_delay? integer
 ---

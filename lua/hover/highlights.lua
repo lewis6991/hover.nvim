@@ -1,15 +1,15 @@
 local M = {}
 
 ---@alias Hover.Highlight
----| '"HoverWindow"'
----| '"HoverBorder"'
----| '"HoverActiveSource"'
----| '"HoverInactiveSource"'
----| '"HoverSourceLine"'
----| '"HoverFloatingError"'
----| '"HoverFloatingWarn"'
----| '"HoverFloatingInfo"'
----| '"HoverFloatingHint"'
+---| 'HoverWindow'
+---| 'HoverBorder'
+---| 'HoverActiveSource'
+---| 'HoverInactiveSource'
+---| 'HoverSourceLine'
+---| 'HoverFloatingError'
+---| 'HoverFloatingWarn'
+---| 'HoverFloatingInfo'
+---| 'HoverFloatingHint'
 
 ---@type table<Hover.Highlight, string>
 M.HIGHLIGHT_GROUP_DEFAULTS = {
