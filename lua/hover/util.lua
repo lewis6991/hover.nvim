@@ -63,6 +63,23 @@ local function trim_empty_lines(lines)
   return vim.list_extend({}, lines, start, finish)
 end
 
+--- @param lines string[]
+--- @return string[]
+local function normalize_new_lines(lines)
+  local result = {}
+  for _, item in ipairs(lines) do
+    item = item:gsub('\r\n', '\n')
+    if item:sub(-1) ~= '\n' then
+      item = item .. '\n'
+    end
+    for line in item:gmatch('(.-)\n') do
+      table.insert(result, line)
+    end
+  end
+
+  return result
+end
+
 --- @param width integer
 --- @param height integer
 --- @param opts vim.api.keyset.win_config
@@ -344,8 +361,10 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   -- if contents given, always set buf lines
   -- if no bufnr, contents is required
   if contents or not bufnr then
+    --- Split strings witn new lines into separate buf lines
+    contents = normalize_new_lines(assert(contents))
     -- Clean up input: trim empty lines from the end, pad
-    contents = trim_empty_lines(assert(contents))
+    contents = trim_empty_lines(contents)
 
     if syntax == 'markdown' then
       -- applies the syntax and sets the lines to the buffer
