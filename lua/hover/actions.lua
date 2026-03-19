@@ -297,7 +297,7 @@ function M.switch(direction, opts)
   for i, p in ipairs(providers) do
     if p.id == current_provider_id then
       current_provider_idx = i
-      return
+      break
     end
   end
 
