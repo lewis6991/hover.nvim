@@ -5,7 +5,8 @@
   },
   "diagnostics" : {
     "disable" : [
-      "unnecessary-if"
+      "unnecessary-if",
+      "incomplete-signature-doc"
     ],
     "enables": [
       "non-literal-expressions-in-assert",

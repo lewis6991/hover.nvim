@@ -43,43 +43,6 @@ local function close_preview_autocmd(winid, hover_bufnr, bufnr)
   })
 end
 
---- @param lines string[]
---- @return string[]
-local function trim_empty_lines(lines)
-  local start = 1
-  for i = 1, #lines do
-    if lines[i] ~= nil and #lines[i] > 0 then
-      start = i
-      break
-    end
-  end
-  local finish = 1
-  for i = #lines, 1, -1 do
-    if lines[i] ~= nil and #lines[i] > 0 then
-      finish = i
-      break
-    end
-  end
-  return vim.list_extend({}, lines, start, finish)
-end
-
---- @param lines string[]
---- @return string[]
-local function normalize_new_lines(lines)
-  local result = {}
-  for _, item in ipairs(lines) do
-    item = item:gsub('\r\n', '\n')
-    if item:sub(-1) ~= '\n' then
-      item = item .. '\n'
-    end
-    for line in item:gmatch('(.-)\n') do
-      table.insert(result, line)
-    end
-  end
-
-  return result
-end
-
 --- @param width integer
 --- @param height integer
 --- @param opts vim.api.keyset.win_config
@@ -280,11 +243,11 @@ local function replace_separators(contents, divider)
   return trimmed
 end
 
----Collapses successive blank lines in the input table into a single one.
----@param contents string[]
----@return string[]
+--- Collapses successive blank lines in the input table into a single one.
+--- @param contents string[]
+--- @return string[]
 local function collapse_blank_lines(contents)
-  local collapsed = {}
+  local collapsed = {} --- @type string[]
   local l = 1
   while l <= #contents do
     local line = contents[l]
@@ -293,43 +256,10 @@ local function collapse_blank_lines(contents)
         l = l + 1
       end
     end
-    table.insert(collapsed, line)
+    collapsed[#collapsed + 1] = line
     l = l + 1
   end
   return collapsed
-end
-
---- Normalizes Markdown input to a canonical form.
---- (Implementation taken from 'vim.lsp.util._normalize_markdown'.)
----
---- The returned Markdown adheres to the GitHub Flavored Markdown (GFM)
---- specification.
----
---- The following transformations are made:
----
----   1. Carriage returns ('\r') and empty lines at the beginning and end are removed
----   2. Successive empty lines are collapsed into a single empty line
----   3. Thematic breaks are expanded to the given width
----
----@private
----@param contents string[]
----@param opts? table
----@return string[] table of lines containing normalized Markdown
----@see https://github.github.com/gfm
-local function normalize_markdown(contents, opts)
-  opts = opts or {}
-
-  -- 1. Carriage returns are removed
-  contents = vim.split(table.concat(contents, '\n'):gsub('\r', ''), '\n', { trimempty = true })
-
-  -- 2. Successive empty lines are collapsed into a single empty line
-  contents = collapse_blank_lines(contents)
-
-  -- 3. Thematic breaks are expanded to the given width
-  local divider = string.rep('─', opts.width or 80)
-  contents = replace_separators(contents, divider)
-
-  return contents
 end
 
 --- @param contents string[]?
@@ -342,6 +272,8 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
   opts.wrap = opts.wrap ~= false -- wrapping by default
   opts.stylize_markdown = opts.stylize_markdown ~= false and vim.g.syntax_on ~= nil
   opts.focus = opts.focus ~= false
+
+  assert(contents or bufnr, 'contents or bufnr is required to open a floating preview')
 
   local cbuf = api.nvim_get_current_buf()
 
@@ -360,16 +292,22 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
 
   -- if contents given, always set buf lines
   -- if no bufnr, contents is required
-  if contents or not bufnr then
-    --- Split strings witn new lines into separate buf lines
-    contents = normalize_new_lines(assert(contents))
-    -- Clean up input: trim empty lines from the end, pad
-    contents = trim_empty_lines(contents)
+  if contents then
+    --- Normalize newlines
+    contents =
+      vim.split(table.concat(contents, '\n'):gsub('\r\n', '\n'), '\n', { trimempty = true })
 
     if syntax == 'markdown' then
       -- applies the syntax and sets the lines to the buffer
       local width, _ = make_floating_popup_size(contents, opts)
-      contents = normalize_markdown(contents, { width = width })
+
+      -- Successive empty lines are collapsed into a single empty line
+      contents = collapse_blank_lines(contents)
+
+      -- Thematic breaks are expanded to the given width
+      local divider = string.rep('─', width or 80)
+      contents = replace_separators(contents, divider)
+
       api.nvim_buf_set_lines(floating_bufnr, 0, -1, false, contents)
     else
       if syntax then
@@ -385,6 +323,7 @@ function M.open_floating_preview(contents, bufnr, syntax, opts)
       vim.bo[floating_bufnr].readonly = ro
     end
   else
+    assert(bufnr)
     -- no contents provided, but we have a bufnr
     -- so get contents from the buffer (needed to compute float size)
     contents = api.nvim_buf_get_lines(bufnr, 0, -1, false)
