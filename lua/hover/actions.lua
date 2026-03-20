@@ -305,6 +305,7 @@ function M.switch(direction, opts)
   -- -1 and +1 to convert to 0-indexed and back
   local provider_id_sel = ((current_provider_idx + offset - 1) % #providers) + 1
   local provider = assert(providers[provider_id_sel])
+  M.close(bufnr)
   async.run(run_provider, provider, providers, bufnr, opts)
 end
 
