@@ -40,19 +40,51 @@ local function count_sources(diagnostics)
   return count
 end
 
+--- @return 'line'|'cursor'|'buffer'|'c'|'l'|'b'
+local function get_scope()
+  return get_float_opts().scope or 'line'
+end
+
 --- @param pos [integer, integer]
 --- @return vim.diagnostic.GetOpts
 local function get_diag_opts(pos)
-  local float_opts = get_float_opts()
-  local scope = float_opts.scope or 'line'
+  local scope = get_scope()
 
   local opts = {}
-  if scope == 'line' then
+  if scope == 'line' or scope == 'cursor' then
     opts.lnum = pos[1] - 1
-  elseif scope == 'cursor' then
-    opts.pos = { pos[1] - 1, pos[2] }
   end
   return opts
+end
+
+--- @param diagnostics vim.Diagnostic[]
+--- @param pos [integer, integer]
+--- @return vim.Diagnostic[]
+local function filter_cursor_diagnostics(diagnostics, pos)
+  local lnum, col = pos[1] - 1, pos[2]
+
+  return vim
+    .iter(diagnostics)
+    :filter(function(d)
+      local contains_line = lnum >= d.lnum and lnum <= d.end_lnum
+      local after_start = lnum ~= d.lnum or col >= d.col
+      local zero_width = d.lnum == d.end_lnum and d.col == d.end_col
+      local before_end = lnum ~= d.end_lnum or col < d.end_col
+
+      return contains_line and after_start and (zero_width or before_end)
+    end)
+    :totable()
+end
+
+--- @param bufnr integer
+--- @param pos [integer, integer]
+--- @return vim.Diagnostic[]
+local function get_diagnostics(bufnr, pos)
+  local diagnostics = diagnostic.get(bufnr, get_diag_opts(pos))
+  if get_scope() == 'cursor' then
+    return filter_cursor_diagnostics(diagnostics, pos)
+  end
+  return diagnostics
 end
 
 --- @param bufnr integer
@@ -60,7 +92,7 @@ end
 --- @return boolean
 local function enabled(bufnr, opts)
   local pos = opts and opts.pos or api.nvim_win_get_cursor(0)
-  return next(diagnostic.get(bufnr, get_diag_opts(pos))) ~= nil
+  return next(get_diagnostics(bufnr, pos)) ~= nil
 end
 
 local ns = api.nvim_create_namespace('hover.diagnostic')
@@ -81,7 +113,7 @@ end
 --- @param done fun(result?: Hover.Provider.Result)
 local function execute(params, done)
   local buffer_diagnostics = diagnostic.get(params.bufnr)
-  local diagnostics = diagnostic.get(params.bufnr, get_diag_opts(params.pos))
+  local diagnostics = get_diagnostics(params.bufnr, params.pos)
 
   local float_opts = get_float_opts()
 
@@ -103,7 +135,7 @@ local function execute(params, done)
     source = false
   end
 
-  local scope = float_opts.scope or 'line'
+  local scope = get_scope()
 
   local prefix_opt = float_opts.prefix
   if prefix_opt == nil then
