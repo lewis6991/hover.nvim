@@ -50,6 +50,10 @@ require('hover').config({
   -- Whether the contents of a currently open hover window should be moved
   -- to a :h preview-window when pressing the hover keymap.
   preview_window = false,
+
+  -- Whether to show the hover window when a provider has no result.
+  show_no_result = false,
+
   title = true,
   mouse_providers = {
     'hover.providers.lsp',

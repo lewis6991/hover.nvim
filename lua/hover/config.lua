@@ -13,6 +13,7 @@ local default_config = {
     border = 'single',
   },
   preview_window = false,
+  show_no_result = false,
   title = true,
   mouse_delay = 1000,
   --- @type (string|Hover.Config.Provider)[]
@@ -31,6 +32,9 @@ local default_config = {
 --- Whether the contents of a currently open hover window should be moved
 --- to a :h preview-window when pressing the hover keymap.
 --- @field preview_window? boolean
+---
+--- Whether to show the hover window when a provider has no result.
+--- @field show_no_result? boolean
 ---
 --- @field title? boolean
 ---
